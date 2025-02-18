@@ -25,14 +25,16 @@ class ElementsLists:
         return generators_with_buses
 
 
-    def get_bus_base_pu(self, subsys="mainsub"):
+    def get_bus_base_kv(self, subsys="mainsub"):
 
-        buses_pu = []
+        buses_kv = []
 
         buses = self.psat.get_element_list("bus", subsys)
 
         for bus in buses:
 
-            buses_pu.append( [bus.number, bus.vmag] )
+            bus_kv = round( float(bus.basekv) * float(bus.vmag), 2 )
 
-        return buses_pu
+            buses_kv.append( [bus.number, bus_kv] )
+
+        return buses_kv

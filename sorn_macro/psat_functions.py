@@ -91,3 +91,8 @@ class PsatFunctions:
     def set_generator_data(self, bus, id, object):
 
         set_gen_dat(bus, id, object, self.error)
+
+
+    def get_bus_data(self, id):
+
+        return get_bus_dat(id, self.error)
