@@ -63,8 +63,13 @@ class PsatFunctions:
             next_component = get_next_comp( subsys, component, self.error )
 
             if element_type not in [ctype.ar, ctype.zn, ctype.bs]:
+
                 if element.status == 0:
                     continue
+
+                if element_type == ctype.gen:
+                    if float(element.mvarmin + 0.1 ) > element.mvarmax:
+                        continue
 
             elements.append(element)
 
@@ -96,3 +101,8 @@ class PsatFunctions:
     def get_bus_data(self, id):
 
         return get_bus_dat(id, self.error)
+    
+
+    def get_generator_data(self, busid, genid):
+
+        return get_gen_dat(busid, genid, self.error)

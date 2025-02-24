@@ -25,7 +25,7 @@ class ElementsLists:
         return generators_with_buses
 
 
-    def get_bus_base_kv(self, subsys="mainsub"):
+    def get_buses_base_kv(self, subsys="mainsub"):
 
         buses_kv = []
 
@@ -38,3 +38,19 @@ class ElementsLists:
             buses_kv.append( [bus.number, bus_kv] )
 
         return buses_kv
+    
+
+    def get_generators_base_mvar(self, subsys="mainsub"):
+
+        gens_mvar = []
+
+        gens = self.psat.get_element_list("generator", subsys)
+
+        for gen in gens:
+
+            if gen.mw < 300:
+                continue
+
+            gens_mvar.append( [gen.bus, gen.mvar, gen.id] ) 
+
+        return gens_mvar
