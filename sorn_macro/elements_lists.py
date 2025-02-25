@@ -48,9 +48,16 @@ class ElementsLists:
 
         for gen in gens:
 
-            if gen.mw < 300:
-                continue
-
             gens_mvar.append( [gen.bus, gen.mvar, gen.id] ) 
 
         return gens_mvar
+    
+    def get_transformers_base_mvar(self, subsys="mainsub"):
+
+        trfs_mvar = []
+
+        trfs = self.psat.get_element_list("adjustable_transformer", subsys)
+
+        for trf in trfs:
+
+            trfs_mvar.append( [trf.frbus, trf.tobus, trf.id, ] )

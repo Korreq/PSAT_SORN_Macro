@@ -98,10 +98,20 @@ class PsatFunctions:
         set_gen_dat(bus, id, object, self.error)
 
 
+    def set_transformer_data(self, object):
+
+        set_2w_trans_dat(object.frbus, object.tobus, object.id, object.sec, object, self.error)
+
+
     def get_bus_data(self, id):
 
         return get_bus_dat(id, self.error)
     
+    
+    def get_transformer_data(self, bus1, bus2, id, sect):
+
+        return get_2w_trans_dat(bus1, bus2, id, sect, self.error)
+
 
     def get_generator_data(self, busid, genid):
 
