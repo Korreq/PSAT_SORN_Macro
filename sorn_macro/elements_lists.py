@@ -52,12 +52,19 @@ class ElementsLists:
 
         return gens_mvar
     
+    # Need to look into from which side is controled and to take base_mvar from that
     def get_transformers_base_mvar(self, subsys="mainsub"):
 
         trfs_mvar = []
+
+        trf_mvar = None
 
         trfs = self.psat.get_element_list("adjustable_transformer", subsys)
 
         for trf in trfs:
 
-            trfs_mvar.append( [trf.frbus, trf.tobus, trf.id, ] )
+            trf_mvar = trf.qfr if trf.meter == "F" else trf.qto
+
+            trfs_mvar.append( [trf.frbus, trf.tobus, trf.id, trf_mvar ] )
+
+        return trfs_mvar

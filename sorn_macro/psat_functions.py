@@ -62,14 +62,20 @@ class PsatFunctions:
 
             next_component = get_next_comp( subsys, component, self.error )
 
+            if element_type == ctype.bs:
+                if element.type == 4:
+                    continue
+
             if element_type not in [ctype.ar, ctype.zn, ctype.bs]:
 
                 if element.status == 0:
                     continue
 
                 if element_type == ctype.gen:
-                    if float(element.mvarmin + 0.1 ) > element.mvarmax:
+                    if float(element.mvarmin + 0.1 ) > element.mvarmax or element.mvar == element.mvarmax:
                         continue
+
+               
 
             elements.append(element)
 
