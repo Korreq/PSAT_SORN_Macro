@@ -12,9 +12,12 @@ TODO:
     *Add comments
     *Result files for all changed elements in model
     *Fix problem with generators on same node, where one of the generators is not able to match it's new voltage to other one
-    *Fix transformer tap change logic
+    (Need to check if limits are set even when generator can't achive them, if yes then compare it agains it's calculated kv)
+    *Fix transformer tap change logic ( check if set margins will not overlap neigbouring taps )
+    *Change the way of finding matching element from loop in a loop to one loop with range (if both arrays are sorted and same lenght) 
 
 '''
+
 psat = PsatFunctions()
 elements = ElementsLists()
 
@@ -31,7 +34,7 @@ transformers = psat.get_element_list('adjustable_transformer')
 trfs_base_mvar = elements.get_transformers_base_mvar()
 
 
-psat.calculate_powerflow()
+#psat.calculate_powerflow()
 
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
 q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
@@ -58,33 +61,38 @@ for element in generators:
     bus_new_kv = bus_kv + 1
     changed_kv_vmag = bus_new_kv / float(generator_bus.basekv)
     
-    mvar = float(generator.mvar)
-
     generator.vhi = generator.vlo = changed_kv_vmag
     psat.set_generator_data(generator.bus, generator.id, generator)       
 
+    '''
+    Change this loop to fix problem when some of neigbouring gen can't match new set voltage
+    '''
+
+    
     for changed_generator in changed_generators:
 
+        # Check if generator has neigbours on the same node
         if changed_generator.bus == generator.bus and changed_generator.id != generator.id:
 
+            # Change generators lower and upper limit to new calculated kv_vmag and apply changes to model
             changed_generator.vhi = changed_generator.vlo = changed_kv_vmag
             psat.set_generator_data(changed_generator.bus, changed_generator.id, changed_generator)
 
+    # Calculate powerflow after changes to generator and it's neigbours 
     psat.calculate_powerflow()
-
+    
+    # Get generators bus with new calculated values
     generator_bus = psat.get_bus_data(generator_bus.number)
-    #generator_new_q = psat.get_generator_data(generator.bus, generator.id)
 
-    #mvar_difference = round( float(generator_new_q.mvar) - mvar, 2 )
-
+    # Calculate buse's new kv and it's kv difference before changes 
     bus_new_kv = float(generator_bus.basekv) * float(generator_bus.vmag)
     kv_difference = round( bus_new_kv - bus_kv, 2 )
 
+    # Set generator bus number, generator's eqname and it's bus kv difference to row of the result files
     v_row = [ generator.bus, "-", generator.eqname, kv_difference ]
     q_row = [ generator.bus, "-", generator.eqname, kv_difference ]
 
     # Getting changed mvar on each generator and transformer
-
     changed_generators = psat.get_element_list("generator")
     changed_transformers = psat.get_element_list("adjustable_transformer")
 
@@ -114,6 +122,7 @@ for element in generators:
                 trf_q_change = round( float( trf_mvar ) - float( trf_base_mvar[3] ) ,2 )
 
                 q_row.append( trf_q_change )
+
 
     # Getting changed voltage on each node
 
@@ -171,7 +180,10 @@ for transformer in transformers:
 
     while trf_pass < trf_max:
 
-        if( round(trf_pass, 4) == trf_current_ratio ):
+        if( 
+            round(trf_pass, 4) >= trf_current_ratio - (0.05 * trf_current_ratio) and
+            round(trf_pass, 4) <= trf_current_ratio + (0.05 * trf_current_ratio)  
+        ):
             trf_current_tap = trf_max_tap
 
             if(trf_pass + trf_step <= trf_max):
@@ -204,7 +216,6 @@ for transformer in transformers:
     changed_transformer = psat.get_transformer_data(transformer.frbus, transformer.tobus, transformer.id, transformer.sec)
 
     
-
     v_row = [ transformer.frbus, transformer.tobus, transformer.name, trf_tap_difference ]
     q_row = [ transformer.frbus, transformer.tobus, transformer.name, trf_tap_difference ]
 
@@ -223,6 +234,7 @@ for transformer in transformers:
 
                 q_row.append( gen_q_change )
 
+
     for changed_transformer in changed_transformers:
 
         for trf_base_mvar in trfs_base_mvar:
@@ -234,9 +246,13 @@ for transformer in transformers:
 
                 q_row.append( trf_q_change )
 
-    # Getting changed voltage on each node
-
+    # Getting buses with changed values 
     buses = psat.get_element_list('bus')
+
+    
+    '''
+        If buses and buses_base_kv arrays are same lenght, then change from 2 loops to one with range
+    '''
 
     for bus in buses:
 
@@ -252,6 +268,7 @@ for transformer in transformers:
 
                 v_row.append( bus_kv_change )
 
+
     psat.print( f"\nDone {transformer.name}\n" )
 
     v_rows.append(v_row)
@@ -262,5 +279,3 @@ for transformer in transformers:
 
 CsvFile(f"{save_path}\\v_result.csv", v_header, v_rows)
 CsvFile(f"{save_path}\\q_result.csv", q_header, q_rows)
-
-psat.load_model(model)
