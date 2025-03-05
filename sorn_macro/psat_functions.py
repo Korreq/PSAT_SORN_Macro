@@ -72,10 +72,12 @@ class PsatFunctions:
                     continue
 
                 if element_type == ctype.gen:
-                    if float(element.mvarmin + 0.1 ) > element.mvarmax or element.mvar == element.mvarmax:
+                    if float( element.mvarmin + ( 0.05 * element.mvarmin ) ) >= element.mvarmax or element.mvar == element.mvarmax:
                         continue
 
-               
+                if element_type == ctype.ultc:
+                    if element.minratio == element.maxratio:
+                        continue
 
             elements.append(element)
 
@@ -87,6 +89,11 @@ class PsatFunctions:
         psat_command('CloseProject:NoSave', self.error)
 
         psat_command(f'OpenPowerflow:"{name}"', self.error)
+
+
+    def save_as_tmp_model(self, name):
+
+        psat_command(f'SavePowerflowAs:"{name}"', self.error)
 
 
     def calculate_powerflow(self):

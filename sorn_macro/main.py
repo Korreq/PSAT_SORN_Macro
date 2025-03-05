@@ -4,6 +4,7 @@ sys.path.append('C:\\DSATools_24-SL\\Psat\\bin\\python')
 
 from psat_functions import PsatFunctions
 from elements_lists import ElementsLists
+from elements_functions import ElementsFunctions
 from csv_handler import CsvFile
 
 '''
@@ -15,26 +16,33 @@ TODO:
     (Need to check if limits are set even when generator can't achive them, if yes then compare it agains it's calculated kv)
     *Fix transformer tap change logic ( check if set margins will not overlap neigbouring taps )
     *Change the way of finding matching element from loop in a loop to one loop with range (if both arrays are sorted and same lenght) 
-
+    *Create input file where you can decide which nodes and elements to use
+    
 '''
 
-psat = PsatFunctions()
-elements = ElementsLists()
 
-model = "C:\\Users\\ien\\Documents\\Models\\model.psp"
+
+psat = PsatFunctions()
+elements_lists = ElementsLists()
+elements_func = ElementsFunctions()
+
+model = "C:\\Users\\ien\\Documents\\Models\\model.pfb"
+tmp_model = "C:\\Users\\ien\\Documents\\Models\\test.pfb"
 save_path = "C:\\Users\\ien\\Documents\\Github\\PSAT_SORN_Macro\\files"
 
 psat.load_model(model)
 
-generators = elements.get_generators_with_buses()
-buses_base_kv = elements.get_buses_base_kv()
-gens_base_mvar = elements.get_generators_base_mvar()
+psat.calculate_powerflow()
+psat.save_as_tmp_model(tmp_model)
+
+
+generators = elements_lists.get_generators_with_buses()
+buses_base_kv = elements_lists.get_buses_base_kv()
+gens_base_mvar = elements_lists.get_generators_base_mvar()
 changed_generators = psat.get_element_list('generator')
 transformers = psat.get_element_list('adjustable_transformer')
-trfs_base_mvar = elements.get_transformers_base_mvar()
+trfs_base_mvar = elements_lists.get_transformers_base_mvar()
 
-
-#psat.calculate_powerflow()
 
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
 q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
@@ -54,37 +62,56 @@ for element in generators:
     generator_bus = element[0]
     generator = element[1]
 
+    # Need to be change into desired elements/nodes input file
     if generator.mwmax < 60:
         continue
 
-    bus_kv = float(generator_bus.basekv) * float(generator_bus.vmag)
-    bus_new_kv = bus_kv + 1
-    changed_kv_vmag = bus_new_kv / float(generator_bus.basekv)
-    
+    changed_kv_vmag, bus_kv = elements_func.get_bus_changed_kv_vmag(generator_bus, 1)
+
     generator.vhi = generator.vlo = changed_kv_vmag
     psat.set_generator_data(generator.bus, generator.id, generator)       
 
-    '''
-    Change this loop to fix problem when some of neigbouring gen can't match new set voltage
-    '''
+    neighbouring_generators = [generator]
 
-    
     for changed_generator in changed_generators:
 
-        # Check if generator has neigbours on the same node
+        # Check if generator has neighbours on the same node
         if changed_generator.bus == generator.bus and changed_generator.id != generator.id:
+
+            neighbouring_generators.append(changed_generator)
 
             # Change generators lower and upper limit to new calculated kv_vmag and apply changes to model
             changed_generator.vhi = changed_generator.vlo = changed_kv_vmag
             psat.set_generator_data(changed_generator.bus, changed_generator.id, changed_generator)
 
-    # Calculate powerflow after changes to generator and it's neigbours 
     psat.calculate_powerflow()
+
+    is_matching_desired_v = True
+    for neighbouring_generator in neighbouring_generators:
+
+        neighbouring_generator_bus = psat.get_bus_data(neighbouring_generator.bus)
+
+        psat.print(f"{neighbouring_generator.bus},{neighbouring_generator.eqname}: {neighbouring_generator_bus.vmag} > {changed_kv_vmag}")
+
+        if round( neighbouring_generator_bus.vmag, 4 ) < round( changed_kv_vmag, 4 ):
+            is_matching_desired_v = False
+            break
+
+    if is_matching_desired_v == False:
+
+        changed_kv_vmag, bus_kv = elements_func.get_bus_changed_kv_vmag(generator_bus, -1)
+
+        for neighbouring_generator in neighbouring_generators:
+
+            neighbouring_generator.vhi = neighbouring_generator.vlo = changed_kv_vmag
+            psat.set_generator_data(neighbouring_generator.bus, neighbouring_generator.id, neighbouring_generator)
+
+        psat.calculate_powerflow()
     
-    # Get generators bus with new calculated values
+    # Get generator bus with new calculated values
     generator_bus = psat.get_bus_data(generator_bus.number)
 
-    # Calculate buse's new kv and it's kv difference before changes 
+    # Calculate bus new kv and it's kv difference before changes 
     bus_new_kv = float(generator_bus.basekv) * float(generator_bus.vmag)
     kv_difference = round( bus_new_kv - bus_kv, 2 )
 
@@ -92,6 +119,7 @@ for element in generators:
     v_row = [ generator.bus, "-", generator.eqname, kv_difference ]
     q_row = [ generator.bus, "-", generator.eqname, kv_difference ]
 
+   
     # Getting changed mvar on each generator and transformer
     changed_generators = psat.get_element_list("generator")
     changed_transformers = psat.get_element_list("adjustable_transformer")
@@ -122,7 +150,7 @@ for element in generators:
                 trf_q_change = round( float( trf_mvar ) - float( trf_base_mvar[3] ) ,2 )
 
                 q_row.append( trf_q_change )
-
+    
 
     # Getting changed voltage on each node
 
@@ -141,7 +169,7 @@ for element in generators:
                 bus_kv_change = round( bus_kv - bus_base_kv[1], 2)
 
                 v_row.append( bus_kv_change )
-
+    
     psat.print( f"\nDone {generator.eqname}\n" )
 
     first_pass = False
@@ -149,58 +177,15 @@ for element in generators:
     v_rows.append(v_row)
     q_rows.append(q_row)
 
-    psat.load_model(model)
+    psat.load_model(tmp_model)
 
 
 for transformer in transformers:
 
     v_row = [] 
     q_row = []
-
-    beg_bus = psat.get_bus_data(transformer.frbus)
-    end_bus = psat.get_bus_data(transformer.tobus)
-
-    trf_from_side = transformer.fsratio * beg_bus.basekv
-    trf_to_side = transformer.tsratio * end_bus.basekv
-
-    trf_max =  ( transformer.maxratio * beg_bus.basekv ) / trf_to_side
-    trf_min =  ( transformer.minratio * beg_bus.basekv ) / trf_to_side
-    
-    trf_step_plans =  transformer.stepratio * beg_bus.basekv 
-
-    trf_step =  (transformer.stepratio * beg_bus.basekv) / trf_to_side 
-
-    trf_current_ratio =  round( trf_from_side / trf_to_side, 4)
-
-    trf_max_tap = 0
-    trf_current_tap = 0
-    trf_changed_tap = 0
-    down_change = True
-    trf_pass = trf_min
-
-    while trf_pass < trf_max:
-
-        if( 
-            round(trf_pass, 4) >= trf_current_ratio - (0.05 * trf_current_ratio) and
-            round(trf_pass, 4) <= trf_current_ratio + (0.05 * trf_current_ratio)  
-        ):
-            trf_current_tap = trf_max_tap
-
-            if(trf_pass + trf_step <= trf_max):
-                trf_changed_tap = trf_max_tap - 1
-            else:
-                trf_changed_tap = trf_max_tap + 1
-                down_change = False
-
-        trf_max_tap += 1
-        trf_pass += trf_step
-
-    trf_current_tap = trf_max_tap - trf_current_tap
-    trf_changed_tap = trf_max_tap - trf_changed_tap
-
-    psat.print(f"{transformer.name}| Curr: {trf_current_tap}, Changed: {trf_changed_tap}, Max: {trf_max_tap}")
-
-    trf_tap_difference = trf_changed_tap - trf_current_tap
+   
+    down_change = elements_func.get_transformer_taps(transformer)[0]
 
     if(down_change):
 
@@ -215,7 +200,9 @@ for transformer in transformers:
 
     changed_transformer = psat.get_transformer_data(transformer.frbus, transformer.tobus, transformer.id, transformer.sec)
 
-    
+    down_change, trf_max_tap, trf_current_tap, trf_changed_tap = elements_func.get_transformer_taps(changed_transformer) 
+    trf_tap_difference = trf_changed_tap - trf_current_tap
+
     v_row = [ transformer.frbus, transformer.tobus, transformer.name, trf_tap_difference ]
     q_row = [ transformer.frbus, transformer.tobus, transformer.name, trf_tap_difference ]
 
@@ -250,9 +237,9 @@ for transformer in transformers:
     buses = psat.get_element_list('bus')
 
     
-    '''
-        If buses and buses_base_kv arrays are same lenght, then change from 2 loops to one with range
-    '''
+    
+    #    If buses and buses_base_kv arrays are same lenght, then change from 2 loops to one with range
+    
 
     for bus in buses:
 
@@ -274,8 +261,10 @@ for transformer in transformers:
     v_rows.append(v_row)
     q_rows.append(q_row)
 
-    psat.load_model(model)
+    psat.load_model(tmp_model)
 
 
 CsvFile(f"{save_path}\\v_result.csv", v_header, v_rows)
 CsvFile(f"{save_path}\\q_result.csv", q_header, q_rows)
+
+psat.load_model(model)
