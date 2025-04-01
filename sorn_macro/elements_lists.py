@@ -16,12 +16,16 @@ class ElementsLists:
 
         for generator in generators:
 
+            if generator.mwmax < 200:
+
+                continue
+
             for bus in buses:
 
                 if( generator.bus == bus.number ):
 
                     generators_with_buses.append( [bus, generator] )            
-        
+
         return generators_with_buses
 
 
@@ -45,10 +49,19 @@ class ElementsLists:
         gens_mvar = []
 
         gens = self.psat.get_element_list("generator", subsys)
+        buses = self.psat.get_element_list("bus", subsys)
 
         for gen in gens:
 
-            gens_mvar.append( [gen.bus, gen.mvar, gen.id] ) 
+            if gen.mwmax < 200:
+
+                continue
+
+            for bus in buses:
+
+                if( gen.bus == bus.number ):
+                    
+                    gens_mvar.append( [gen.bus, gen.mvar, gen.id] ) 
 
         return gens_mvar
     
