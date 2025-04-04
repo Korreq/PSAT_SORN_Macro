@@ -49,6 +49,7 @@ class ElementsFunctions:
 
         return down_change, trf_max_tap, trf_current_tap, trf_changed_tap
     
+
     def get_bus_changed_kv_vmag(self, bus, value):
 
         bus_kv = float(bus.basekv) * float(bus.vmag)
@@ -56,3 +57,57 @@ class ElementsFunctions:
         changed_kv_vmag = bus_new_kv / float(bus.basekv)
         
         return changed_kv_vmag, bus_kv
+    
+
+    def get_changed_generator_buses_results(self, changed_generators, base_generators_mvar , first_pass):
+
+        q_header = []
+        q_row = []
+
+        for i in range( len( changed_generators ) ):
+
+            if first_pass:
+                q_header.append( changed_generators[i][1].eqname.split("-")[0] )
+
+            generator_q_change = round( float( changed_generators[i][1].mvar ) - float( base_generators_mvar[i] ), 2 )
+
+            q_row.append( generator_q_change )
+
+        return q_row, q_header
+        
+
+    def get_changed_transformers_results(self, changed_transformers, base_transformers_mvar, first_pass):
+
+        q_header = []
+        q_row = []
+
+        for i in range( len( changed_transformers ) ):
+
+            if first_pass:
+                q_header.append( changed_transformers[i].name )
+
+            trf_mvar = changed_transformers[i].qfr if changed_transformers[i].meter == "F" else changed_transformers[i].qto
+            trf_q_change = round( float( trf_mvar ) - float( base_transformers_mvar[i] ), 2 )
+
+            q_row.append( trf_q_change )
+
+        return q_row, q_header
+        
+
+    def get_changed_buses_results(self, changed_buses, base_buses_kv, first_pass):
+
+        v_header = []
+        v_row = []
+
+        for i in range( len( changed_buses ) ):
+
+            if first_pass:
+                v_header.append( changed_buses[i].name.split("  ")[0] )
+
+            bus_kv = round( float(changed_buses[i].basekv) * float(changed_buses[i].vmag), 2 )
+            bus_kv_change = round( bus_kv - base_buses_kv[i], 2 )
+
+            v_row.append( bus_kv_change )
+
+        return v_row, v_header
+       

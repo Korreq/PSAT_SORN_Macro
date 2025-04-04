@@ -63,7 +63,7 @@ class ElementsLists:
 
             bus_kv = round( float(bus.basekv) * float(bus.vmag), 2 )
 
-            buses_kv.append( [bus.number, bus_kv] )
+            buses_kv.append( bus_kv )
 
         return buses_kv
     
@@ -85,7 +85,7 @@ class ElementsLists:
 
                 if( gen.bus == bus.number ):
                     
-                    gens_mvar.append( [gen.bus, gen.mvar, gen.id] ) 
+                    gens_mvar.append( gen.mvar ) 
 
         return gens_mvar
     
@@ -98,7 +98,7 @@ class ElementsLists:
 
         for buses in buses_with_generators:
 
-            generators_from_bus_mvar.append( [buses[1].bus, buses[1].mvar, buses[1].id] )
+            generators_from_bus_mvar.append( buses[1].mvar )
 
         return generators_from_bus_mvar
 
@@ -116,6 +116,6 @@ class ElementsLists:
 
             trf_mvar = trf.qfr if trf.meter == "F" else trf.qto
 
-            trfs_mvar.append( [trf.frbus, trf.tobus, trf.id, trf_mvar ] )
+            trfs_mvar.append( trf_mvar )
 
         return trfs_mvar
