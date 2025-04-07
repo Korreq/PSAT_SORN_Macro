@@ -22,8 +22,6 @@ class ElementsFunctions:
         trf_min =  ( transformer.minratio * beg_bus.basekv ) / trf_to_side
         trf_step =  (transformer.stepratio * beg_bus.basekv) / trf_to_side 
 
-       
-
         trf_max_tap = trf_current_tap = trf_changed_tap = 0
         trf_pass = trf_min
 

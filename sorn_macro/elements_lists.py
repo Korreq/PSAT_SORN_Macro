@@ -6,28 +6,6 @@ class ElementsLists:
     def __init__(self):
         self.psat = PsatFunctions()
 
-    
-    def get_generators_with_buses(self, subsys="mainsub"):
-
-        generators_with_buses = []
-
-        generators = self.psat.get_element_list("generator", subsys)
-        buses = self.psat.get_element_list("bus", subsys)
-
-        for generator in generators:
-
-            if generator.mwmax < 200:
-
-                continue
-
-            for bus in buses:
-
-                if( generator.bus == bus.number ):
-
-                    generators_with_buses.append( [bus, generator] )            
-
-        return generators_with_buses
-
 
     def get_generators_bus(self, subsys="mainsub"):
 
@@ -67,29 +45,7 @@ class ElementsLists:
 
         return buses_kv
     
-
-    def get_generators_base_mvar(self, subsys="mainsub"):
-
-        gens_mvar = []
-
-        gens = self.psat.get_element_list("generator", subsys)
-        buses = self.psat.get_element_list("bus", subsys)
-
-        for gen in gens:
-
-            if gen.mwmax < 200:
-
-                continue
-
-            for bus in buses:
-
-                if( gen.bus == bus.number ):
-                    
-                    gens_mvar.append( gen.mvar ) 
-
-        return gens_mvar
-    
-
+  
     def get_generators_from_bus_base_mvar(self, subsys="mainsub"):
 
         generators_from_bus_mvar = []
