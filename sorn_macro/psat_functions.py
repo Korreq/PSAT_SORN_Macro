@@ -72,10 +72,6 @@ class PsatFunctions:
                 if element.status == 0:
                     continue
 
-                '''if element_type == ctype.gen:
-                    if float( element.mvarmin + ( 0.05 * element.mvarmin ) ) >= element.mvarmax or element.mvar == element.mvarmax:
-                        continue
-                '''
                 if element_type == ctype.ultc:
                     if element.minratio == element.maxratio:
                         continue

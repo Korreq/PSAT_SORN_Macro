@@ -1,11 +1,13 @@
 from psat_functions import PsatFunctions
 
+"Change max_mv generation to get_data ini method"
+
 
 class ElementsLists:
 
-    def __init__(self):
+    def __init__(self, config):
         self.psat = PsatFunctions()
-
+        self.config = config
 
     def get_generators_bus(self, subsys="mainsub"):
 
@@ -16,7 +18,7 @@ class ElementsLists:
         
         for generator in generators:
 
-            if generator.mwmax < 200:
+            if generator.mwmax < int( self.config['calculations']['minimum_max_mv_generators'] ):
 
                 continue
 
@@ -59,7 +61,6 @@ class ElementsLists:
         return generators_from_bus_mvar
 
 
-    # Need to look into from which side is controled and to take base_mvar from that
     def get_transformers_base_mvar(self, subsys="mainsub"):
 
         trfs_mvar = []

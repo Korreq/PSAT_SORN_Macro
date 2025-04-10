@@ -1,12 +1,13 @@
 import sys
-sys.path.append('C:\\Users\\ien\\Documents\\Github\\PSAT_SORN_Macro\\sorn_macro')
-sys.path.append('C:\\DSATools_24-SL\\Psat\\bin\\python')
+script_path = 'C:/Users/ien/Documents/Github/PSAT_SORN_Macro'
+sys.path.append(script_path + '/sorn_macro')
 
 from psat_functions import PsatFunctions
 from elements_lists import ElementsLists
 from elements_functions import ElementsFunctions
 from csv_handler import CsvFile
 from file_handler import FileHandler
+from ini_handler import IniHandler
 
 '''
 TODO:
@@ -20,39 +21,39 @@ TODO:
     if there was multiple generators in same node)
 '''
 
+#Load configuration file
+ini_handler = IniHandler(script_path + '/files/config.ini')
+config = ini_handler.get_config_file()
+
+#Add psat isntall loacation to enviromental variables
+sys.path.append( config['psat']['psat_installation_path'] + "/bin/python" )
+
 psat = PsatFunctions()
-elements_lists = ElementsLists()
+elements_lists = ElementsLists(config)
 elements_func = ElementsFunctions()
 f_handler = FileHandler()
 
-model_path = "C:\\Users\\ien\\Documents\\Models\\"
-model = "model.pfb"
+model_path = config['psat']['psat_model_path']
+model = config['psat']['psat_model_name']
+subsystem = config['psat']['subsystem']
+save_path = config['results']['results_save_path']
 tmp_model = "tmp.pfb"
-save_path = "C:\\Users\\ien\\Documents\\Github\\PSAT_SORN_Macro\\files"
-
-'''
-    Loading from config file
-
-
-'''
-
-
 
 # Load model, calculate it's powerflow and save changed model as temporary model
-psat.load_model(model_path + model)
+psat.load_model(model_path + '/' + model)
 psat.calculate_powerflow()
-psat.save_as_tmp_model(model_path + tmp_model)
+psat.save_as_tmp_model(model_path + '/' + tmp_model)
 
 
 # Get arrays with all generators and transformers in loaded model
-all_generators = psat.get_element_list('generator')
-transformers = psat.get_element_list('adjustable_transformer')
+all_generators = psat.get_element_list('generator', config['psat']['subsystem'])
+transformers = psat.get_element_list('adjustable_transformer', config['psat']['subsystem'])
 # Get arrays with base values for buses, transformers, buses with connected suitable generators
-buses_base_kv = elements_lists.get_buses_base_kv()
-trfs_base_mvar = elements_lists.get_transformers_base_mvar()
-generators_from_bus_base_mvar = elements_lists.get_generators_from_bus_base_mvar()
+buses_base_kv = elements_lists.get_buses_base_kv(config['psat']['subsystem'])
+trfs_base_mvar = elements_lists.get_transformers_base_mvar(config['psat']['subsystem'])
+generators_from_bus_base_mvar = elements_lists.get_generators_from_bus_base_mvar(config['psat']['subsystem'])
 # Get array with buses that have suitable generator connected 
-generators_from_bus = elements_lists.get_generators_bus()
+generators_from_bus = elements_lists.get_generators_bus(config['psat']['subsystem'])
 
 
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
@@ -71,9 +72,9 @@ for element in generators_from_bus:
 
     generator_bus = element[0]
     generator = element[1]
-
+                                                                                    
     # Getting new kv change from base value and calculated bus kv
-    changed_kv_vmag, bus_kv = elements_func.get_bus_changed_kv_vmag(generator_bus, 1)
+    changed_kv_vmag, bus_kv = elements_func.get_bus_changed_kv_vmag(generator_bus, ini_handler.get_data('calculations','node_kv_change_value', 'int') )
 
     # Setting changed kv value to generator's lower and upper limits 
     generator.vhi = generator.vlo = changed_kv_vmag
@@ -109,7 +110,7 @@ for element in generators_from_bus:
     if is_matching_desired_v == False:
 
         # Getting new kv change from base value and calculated bus kv
-        changed_kv_vmag, bus_kv = elements_func.get_bus_changed_kv_vmag(generator_bus, -1)
+        changed_kv_vmag, bus_kv = elements_func.get_bus_changed_kv_vmag(generator_bus, - ini_handler.get_data('calculations','node_kv_change_value', 'int') )
 
         # Apply new kv changed value to all generators connected to bus
         for neighbouring_generator in neighbouring_generators:
@@ -126,7 +127,8 @@ for element in generators_from_bus:
 
     # Calculate bus new kv and it's kv change from base value 
     bus_new_kv = float(generator_bus.basekv) * float(generator_bus.vmag)
-    kv_difference = round( bus_new_kv - bus_kv, 2 )
+    
+    kv_difference = round( bus_new_kv - bus_kv, ini_handler.get_data('results','rounding_precission', 'int') )
 
     # Set generator bus number, generator's eqname and it's bus kv difference to row of the result files
     v_row = [ generator.bus, "-", generator.eqname.split("-")[0], kv_difference ]
@@ -134,9 +136,9 @@ for element in generators_from_bus:
 
    
     # Get updated buses with generators and transformers
-    changed_transformers = psat.get_element_list("adjustable_transformer")
-    changed_generators_from_bus = elements_lists.get_generators_bus()
-    buses = psat.get_element_list('bus')
+    changed_transformers = psat.get_element_list("adjustable_transformer", config['psat']['subsystem'])
+    changed_generators_from_bus = elements_lists.get_generators_bus(config['psat']['subsystem'])
+    buses = psat.get_element_list('bus', config['psat']['subsystem'])
 
 
     # Get row and header filled with generators changes for q_result file 
@@ -163,7 +165,7 @@ for element in generators_from_bus:
     q_rows.append(q_row)
 
     # Load temporary model
-    psat.load_model(model_path + tmp_model)
+    psat.load_model(model_path + '/' + tmp_model)
 
 
 # Iterate through each suitable transformer 
@@ -214,15 +216,12 @@ for transformer in transformers:
     q_rows.append(q_row)
 
     # Load temporary model
-    psat.load_model(model_path + tmp_model)
+    psat.load_model(model_path + '/' + tmp_model)
 
 # Save filled rows and headers to corresponding result files
 CsvFile(f"{save_path}\\v_result.csv", v_header, v_rows)
 CsvFile(f"{save_path}\\q_result.csv", q_header, q_rows)
 
 # Load original model and delete all temporary model files
-psat.load_model(model_path + model)
+psat.load_model(model_path + '/' + model)
 f_handler.delete_files_from_directory(model_path,"tmp")
-
-
-
