@@ -4,8 +4,7 @@ class ElementsFunctions:
 
     def __init__(self):
         self.psat = PsatFunctions()
-
-    "Fix missing config arguments in main file"       
+    
 
     def get_transformer_taps(self, transformer, transformer_ratio_margin=0.05):
 

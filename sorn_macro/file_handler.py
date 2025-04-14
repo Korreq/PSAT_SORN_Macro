@@ -12,7 +12,7 @@ class FileHandler:
 
             if string in file_name:
 
-                os.remove(directory + file_name)
+                os.remove(directory + "/" + file_name)
 
 
     

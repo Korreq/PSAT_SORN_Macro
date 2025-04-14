@@ -29,13 +29,13 @@ config = ini_handler.get_config_file()
 sys.path.append( config['psat']['psat_installation_path'] + "/bin/python" )
 
 psat = PsatFunctions()
-elements_lists = ElementsLists(config)
+elements_lists = ElementsLists()
 elements_func = ElementsFunctions()
 f_handler = FileHandler()
 
+#Assign paths and file names to main model and for temporary file
 model_path = config['psat']['psat_model_path']
 model = config['psat']['psat_model_name']
-subsystem = config['psat']['subsystem']
 save_path = config['results']['results_save_path']
 tmp_model = "tmp.pfb"
 
@@ -51,9 +51,12 @@ transformers = psat.get_element_list('adjustable_transformer', config['psat']['s
 # Get arrays with base values for buses, transformers, buses with connected suitable generators
 buses_base_kv = elements_lists.get_buses_base_kv(config['psat']['subsystem'])
 trfs_base_mvar = elements_lists.get_transformers_base_mvar(config['psat']['subsystem'])
-generators_from_bus_base_mvar = elements_lists.get_generators_from_bus_base_mvar(config['psat']['subsystem'])
+
+
+generators_from_bus_base_mvar = elements_lists.get_generators_from_bus_base_mvar(ini_handler.get_data('calculations','minimum_max_mv_generators','int'), 
+                                                                                 config['psat']['subsystem'])
 # Get array with buses that have suitable generator connected 
-generators_from_bus = elements_lists.get_generators_bus(config['psat']['subsystem'])
+generators_from_bus = elements_lists.get_generators_bus( ini_handler.get_data('calculations','minimum_max_mv_generators','int'), config['psat']['subsystem'])
 
 
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
@@ -137,24 +140,28 @@ for element in generators_from_bus:
    
     # Get updated buses with generators and transformers
     changed_transformers = psat.get_element_list("adjustable_transformer", config['psat']['subsystem'])
-    changed_generators_from_bus = elements_lists.get_generators_bus(config['psat']['subsystem'])
+    changed_generators_from_bus = elements_lists.get_generators_bus( ini_handler.get_data('calculations','minimum_max_mv_generators','int'), 
+                                                                    config['psat']['subsystem'])
     buses = psat.get_element_list('bus', config['psat']['subsystem'])
 
 
     # Get row and header filled with generators changes for q_result file 
-    tmp_row, tmp_header = elements_func.get_changed_generator_buses_results(changed_generators_from_bus, generators_from_bus_base_mvar, first_pass)
+    tmp_row, tmp_header = elements_func.get_changed_generator_buses_results(changed_generators_from_bus, generators_from_bus_base_mvar, first_pass, 
+                                                                            ini_handler.get_data('results','rounding_precission', 'int') )
     q_row.extend( tmp_row )
     if tmp_header:
         q_header.extend( tmp_header )
 
     # Get row and header filled with transformers changes for q_result file
-    tmp_row, tmp_header = elements_func.get_changed_transformers_results(changed_transformers, trfs_base_mvar, first_pass)
+    tmp_row, tmp_header = elements_func.get_changed_transformers_results(changed_transformers, trfs_base_mvar, first_pass, 
+                                                                         ini_handler.get_data('results','rounding_precission', 'int'))
     q_row.extend( tmp_row )
     if tmp_header:
         q_header.extend( tmp_header )
 
     # Get row and header filled with buses changes for v_result file
-    tmp_row, tmp_header = elements_func.get_changed_buses_results(buses, buses_base_kv, first_pass)
+    tmp_row, tmp_header = elements_func.get_changed_buses_results(buses, buses_base_kv, first_pass, ini_handler.get_data('results','rounding_precission', 'int'), 
+                                                                  ini_handler.get_data('results', 'node_notation_next_to_bus_name', 'boolean'))
     v_row.extend( tmp_row )
     if tmp_header:
         v_header.extend( tmp_header )
@@ -175,7 +182,7 @@ for transformer in transformers:
     q_row = []
     
     # If able change tap down, if not change tap up 
-    down_change = elements_func.get_transformer_taps(transformer)[0]
+    down_change = elements_func.get_transformer_taps(transformer, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )[0]
     if(down_change):
         transformer.fsratio += transformer.stepratio
     else:
@@ -187,7 +194,9 @@ for transformer in transformers:
 
     # Get updated transformer's data
     changed_transformer = psat.get_transformer_data(transformer.frbus, transformer.tobus, transformer.id, transformer.sec)
-    down_change, trf_max_tap, trf_current_tap, trf_changed_tap = elements_func.get_transformer_taps(changed_transformer) 
+    down_change, trf_max_tap, trf_current_tap, trf_changed_tap = elements_func.get_transformer_taps(
+        changed_transformer, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') 
+    ) 
     trf_tap_difference = trf_changed_tap - trf_current_tap
 
     v_row = [ transformer.frbus, transformer.tobus, transformer.name, trf_tap_difference ]
@@ -196,19 +205,23 @@ for transformer in transformers:
     # Getting changed mvar on each generator and transformer
 
     changed_transformers = psat.get_element_list("adjustable_transformer")
-    changed_generators_from_bus = elements_lists.get_generators_bus()
-    buses = psat.get_element_list('bus')
+    changed_generators_from_bus = elements_lists.get_generators_bus( ini_handler.get_data('calculations','minimum_max_mv_generators','int'),
+                                                                    config['psat']['subsystem'])
+    buses = psat.get_element_list('bus', config['psat']['subsystem'])
 
     # Get row filled with generators changes for q_result file 
-    tmp_row = elements_func.get_changed_generator_buses_results(changed_generators_from_bus, generators_from_bus_base_mvar, 0)[0]
+    tmp_row = elements_func.get_changed_generator_buses_results(changed_generators_from_bus, generators_from_bus_base_mvar, 
+                                                                0, ini_handler.get_data('results','rounding_precission', 'int'))[0]
     q_row.extend( tmp_row )
     
     # Get row filled with transformers changes for q_result file
-    tmp_row = elements_func.get_changed_transformers_results(changed_transformers, trfs_base_mvar, 0)[0]
+    tmp_row = elements_func.get_changed_transformers_results(changed_transformers, trfs_base_mvar, 
+                                                             0, ini_handler.get_data('results','rounding_precission', 'int'))[0]
     q_row.extend( tmp_row )
 
     # Get row filled with buses changes for v_result file
-    tmp_row = elements_func.get_changed_buses_results(buses, buses_base_kv, 0)[0]
+    tmp_row = elements_func.get_changed_buses_results(buses, buses_base_kv, 0, ini_handler.get_data('results','rounding_precission', 'int'),
+                                                    ini_handler.get_data('results', 'node_notation_next_to_bus_name', 'boolean'))[0]
     v_row.extend( tmp_row )
    
     # Add transformer's changed row to v_rows and q_rows  
