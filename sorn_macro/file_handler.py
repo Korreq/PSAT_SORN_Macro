@@ -1,4 +1,5 @@
 import os
+from time_manager import TimeManager
 
 class FileHandler:
 
@@ -15,7 +16,25 @@ class FileHandler:
                 os.remove(directory + "/" + file_name)
 
 
+    def create_directory(self, path, string, add_timestamp):
+
+        if not string:
+            return path
+
+        timestamp = TimeManager().get_current_utc_time()
+
+        if add_timestamp:
+            directory_path = f'{path}/{timestamp}_{string}'
+
+        else:
+            directory_path = path + '/' + string
+
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+
+        return directory_path
     
+
     #Left for possible implementation
     def get_data_from_file(self, file_path):
 

@@ -8,16 +8,16 @@ from elements_functions import ElementsFunctions
 from csv_handler import CsvFile
 from file_handler import FileHandler
 from ini_handler import IniHandler
+from time_manager import TimeManager
 
 '''
 TODO:
 
     *Add missing comments
-    *Result files for all changed elements in model 
-    *Info file 
-    *Timer to measure elapsed time 
-    *Create input file where you can decide which nodes and elements to use ( Stashed for now, looking into useing database for it )
-    *Change iterating from generators to nodes ( Add indication in results file, 
+    *Result files for all elements in model 
+    *Info file ( put elapsed time there )
+    *Create input file where you can decide which nodes and elements to use ( Stashed for now, looking into using database for it )
+    *Change iterating from generators to nodes ( Add gens id in results file, 
     if there was multiple generators in same node)
 '''
 
@@ -32,6 +32,7 @@ psat = PsatFunctions()
 elements_lists = ElementsLists()
 elements_func = ElementsFunctions()
 f_handler = FileHandler()
+time_mgr = TimeManager()
 
 #Assign paths and file names to main model and for temporary file
 model_path = config['psat']['psat_model_path']
@@ -51,12 +52,11 @@ transformers = psat.get_element_list('adjustable_transformer', config['psat']['s
 # Get arrays with base values for buses, transformers, buses with connected suitable generators
 buses_base_kv = elements_lists.get_buses_base_kv(config['psat']['subsystem'])
 trfs_base_mvar = elements_lists.get_transformers_base_mvar(config['psat']['subsystem'])
-
-
-generators_from_bus_base_mvar = elements_lists.get_generators_from_bus_base_mvar(ini_handler.get_data('calculations','minimum_max_mv_generators','int'), 
-                                                                                 config['psat']['subsystem'])
+generators_from_bus_base_mvar = elements_lists.get_generators_from_bus_base_mvar(
+    ini_handler.get_data('calculations','minimum_max_mv_generators','int'), config['psat']['subsystem'])
 # Get array with buses that have suitable generator connected 
-generators_from_bus = elements_lists.get_generators_bus( ini_handler.get_data('calculations','minimum_max_mv_generators','int'), config['psat']['subsystem'])
+generators_from_bus = elements_lists.get_generators_bus( 
+    ini_handler.get_data('calculations','minimum_max_mv_generators','int'), config['psat']['subsystem'])
 
 
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
@@ -83,10 +83,8 @@ for element in generators_from_bus:
     generator.vhi = generator.vlo = changed_kv_vmag
     psat.set_generator_data(generator.bus, generator.id, generator)       
 
-
-    neighbouring_generators = [generator]
-
     # Searching throgh all generators in model for generators connected to same node
+    neighbouring_generators = [generator]
     for changed_generator in all_generators:
 
         # If generator is on the same node and has different id, then add it to neigbours array and change it's limits 
@@ -231,10 +229,26 @@ for transformer in transformers:
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
 
+# If set to true in config, create a results folder
+if ini_handler.get_data('results','create_results_folder','boolean'):
+
+    save_path = f_handler.create_directory(save_path, config['results']['folder_name'] , 
+                                           ini_handler.get_data('results','add_timestamp_to_folder','boolean'))
+
+# If set to true in config, add timestamp to result files
+if ini_handler.get_data('results','add_timestamp_to_files','boolean'):
+
+    timestamp = time_mgr.get_current_utc_time()
+else:
+
+    timestamp = ''
+
 # Save filled rows and headers to corresponding result files
-CsvFile(f"{save_path}\\v_result.csv", v_header, v_rows)
-CsvFile(f"{save_path}\\q_result.csv", q_header, q_rows)
+CsvFile( save_path, 'v_result.csv', v_header, v_rows, timestamp, config['results']['files_prefix'] )
+CsvFile( save_path, 'q_result.csv', q_header, q_rows, timestamp, config['results']['files_prefix'] )
 
 # Load original model and delete all temporary model files
 psat.load_model(model_path + '/' + model)
 f_handler.delete_files_from_directory(model_path,"tmp")
+
+psat.print(f"Elapsed time: {time_mgr.elapsed_time()}")

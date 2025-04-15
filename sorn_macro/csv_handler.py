@@ -2,10 +2,19 @@ import csv
 
 class CsvFile:
 
-    def __init__(self, filename, header, rows):
-        self.filename = filename
+    def __init__(self, path, filename, header, rows, timestamp='', prefix=''):
+        
+        full_name = filename
 
-        with open(self.filename, 'w') as file:
+        if prefix:
+            full_name = prefix + '_' + full_name
+
+        if timestamp:
+            full_name = timestamp + '_' + full_name 
+        
+        self.full_path = path + '/' + full_name
+
+        with open(self.full_path, 'w') as file:
 
             writer = csv.writer(file, dialect="excel")
 
