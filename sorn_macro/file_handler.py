@@ -47,3 +47,10 @@ class FileHandler:
             for line in lines:
 
                 pass
+
+    
+    def create_info_file(self, file_path, text):
+
+        with open(file_path + '/info.txt', "w") as file:
+
+            file.write(text)

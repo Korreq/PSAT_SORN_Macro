@@ -68,7 +68,7 @@ class PsatFunctions:
                 if element.type == 4:
                     continue
 
-            if element_type not in [ctype.ar, ctype.zn, ctype.bs]:
+            if element_type not in [ctype.ar, ctype.zn, ctype.bs, ctype.fxsh]:
                 if element.status == 0:
                     continue
 
@@ -103,14 +103,19 @@ class PsatFunctions:
         psat_msg( message )
 
     # Set generator data, requires bus number, generator id and generator object
-    def set_generator_data(self, bus, id, object):
+    def set_generator_data(self, object):
 
-        set_gen_dat(bus, id, object, self.error)
+        set_gen_dat(object.bus, object.id, object, self.error)
 
     # Set transformer data, requires from and to bus number, transformer id, transformer section and transformer object
     def set_transformer_data(self, object):
 
         set_2w_trans_dat(object.frbus, object.tobus, object.id, object.sec, object, self.error)
+
+    # Set shunt data, requires bus id, shunt id and shunt object
+    def set_fixed_shunt_data(self, object):
+
+        set_fx_shunt_dat(object.bus, object.id, object, self.error)
 
     # Get bus data by it's number
     def get_bus_data(self, id):
@@ -126,3 +131,9 @@ class PsatFunctions:
     def get_generator_data(self, busid, genid):
 
         return get_gen_dat(busid, genid, self.error)
+    
+    #Get fixed shunt data, requires bus number, shunt id
+    def get_fixed_shunt_data(self, busid, shuntid):
+
+        return get_fx_shunt_dat(busid, shuntid, self.error)
+    

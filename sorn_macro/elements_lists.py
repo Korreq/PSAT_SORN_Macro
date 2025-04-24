@@ -73,3 +73,20 @@ class ElementsLists:
             trfs_mvar.append( trf_mvar )
 
         return trfs_mvar
+    
+
+    def get_shunts(self, abs_minimum=0 ,subys="mainsub"):
+
+        filtled_shunts = []
+
+        shunts = self.psat.get_element_list("fixed_shunt", subys)
+
+        for shunt in shunts:
+
+            if abs(shunt.nommvar) < abs_minimum:
+
+                continue
+
+            filtled_shunts.append(shunt)
+
+        return filtled_shunts

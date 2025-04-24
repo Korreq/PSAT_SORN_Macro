@@ -38,7 +38,9 @@ time_mgr = TimeManager()
 model_path = config['psat']['psat_model_path']
 model = config['psat']['psat_model_name']
 save_path = config['results']['results_save_path']
+subsystem = config['psat']['subsystem']
 tmp_model = "tmp.pfb"
+start_timestamp = time_mgr.get_current_utc_time()
 
 # Load model, calculate it's powerflow and save changed model as temporary model
 psat.load_model(model_path + '/' + model)
@@ -47,20 +49,22 @@ psat.save_as_tmp_model(model_path + '/' + tmp_model)
 
 
 # Get arrays with all generators and transformers in loaded model
-all_generators = psat.get_element_list('generator', config['psat']['subsystem'])
-transformers = psat.get_element_list('adjustable_transformer', config['psat']['subsystem'])
+all_generators = psat.get_element_list('generator', subsystem)
+transformers = psat.get_element_list('adjustable_transformer', subsystem)
 # Get arrays with base values for buses, transformers, buses with connected suitable generators
-buses_base_kv = elements_lists.get_buses_base_kv(config['psat']['subsystem'])
-trfs_base_mvar = elements_lists.get_transformers_base_mvar(config['psat']['subsystem'])
+buses_base_kv = elements_lists.get_buses_base_kv(subsystem)
+trfs_base_mvar = elements_lists.get_transformers_base_mvar(subsystem)
 generators_from_bus_base_mvar = elements_lists.get_generators_from_bus_base_mvar(
-    ini_handler.get_data('calculations','minimum_max_mv_generators','int'), config['psat']['subsystem'])
-# Get array with buses that have suitable generator connected 
+    ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
+# Get arrays with buses that have suitable generator connected and filtred shunts 
 generators_from_bus = elements_lists.get_generators_bus( 
-    ini_handler.get_data('calculations','minimum_max_mv_generators','int'), config['psat']['subsystem'])
+    ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
+shunts = elements_lists.get_shunts(
+    ini_handler.get_data('calculations','shunt_minimal_abs_mvar_value','int'), subsystem)
 
 
-v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
-q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
+v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference/State']
+q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference/State']
 v_rows = [] 
 q_rows = []
 tmp_row = []
@@ -81,7 +85,7 @@ for element in generators_from_bus:
 
     # Setting changed kv value to generator's lower and upper limits 
     generator.vhi = generator.vlo = changed_kv_vmag
-    psat.set_generator_data(generator.bus, generator.id, generator)       
+    psat.set_generator_data(generator)       
 
     # Searching throgh all generators in model for generators connected to same node
     neighbouring_generators = [generator]
@@ -93,7 +97,7 @@ for element in generators_from_bus:
 
             # Setting changed kv value to generator's lower and upper limits 
             changed_generator.vhi = changed_generator.vlo = changed_kv_vmag
-            psat.set_generator_data(changed_generator.bus, changed_generator.id, changed_generator)
+            psat.set_generator_data(changed_generator)
 
     psat.calculate_powerflow()
 
@@ -118,7 +122,7 @@ for element in generators_from_bus:
 
             # Setting changed kv value to generator's lower and upper limits 
             neighbouring_generator.vhi = neighbouring_generator.vlo = changed_kv_vmag
-            psat.set_generator_data(neighbouring_generator.bus, neighbouring_generator.id, neighbouring_generator)
+            psat.set_generator_data(neighbouring_generator)
 
         psat.calculate_powerflow()
     
@@ -136,11 +140,11 @@ for element in generators_from_bus:
     q_row = [ generator.bus, "-", generator.eqname.split("-")[0], kv_difference ]
 
    
-    # Get updated buses with generators and transformers
-    changed_transformers = psat.get_element_list("adjustable_transformer", config['psat']['subsystem'])
-    changed_generators_from_bus = elements_lists.get_generators_bus( ini_handler.get_data('calculations','minimum_max_mv_generators','int'), 
-                                                                    config['psat']['subsystem'])
-    buses = psat.get_element_list('bus', config['psat']['subsystem'])
+    # Getting changed values on each transformers, generators and buses
+    changed_transformers = psat.get_element_list("adjustable_transformer", subsystem)
+    changed_generators_from_bus = elements_lists.get_generators_bus( 
+        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
+    buses = psat.get_element_list('bus', subsystem)
 
 
     # Get row and header filled with generators changes for q_result file 
@@ -200,12 +204,11 @@ for transformer in transformers:
     v_row = [ transformer.frbus, transformer.tobus, transformer.name, trf_tap_difference ]
     q_row = [ transformer.frbus, transformer.tobus, transformer.name, trf_tap_difference ]
 
-    # Getting changed mvar on each generator and transformer
-
+    # Getting changed values on each transformers, generators and buses
     changed_transformers = psat.get_element_list("adjustable_transformer")
-    changed_generators_from_bus = elements_lists.get_generators_bus( ini_handler.get_data('calculations','minimum_max_mv_generators','int'),
-                                                                    config['psat']['subsystem'])
-    buses = psat.get_element_list('bus', config['psat']['subsystem'])
+    changed_generators_from_bus = elements_lists.get_generators_bus( 
+        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
+    buses = psat.get_element_list('bus', subsystem)
 
     # Get row filled with generators changes for q_result file 
     tmp_row = elements_func.get_changed_generator_buses_results(changed_generators_from_bus, generators_from_bus_base_mvar, 
@@ -229,6 +232,53 @@ for transformer in transformers:
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
 
+
+# Iterate through each suitable shunts
+for shunt in shunts:
+
+    v_row = []
+    q_row = []
+
+    # Set fliped shunt status 
+    shunt.status = 0 if shunt.status == 1 else 1
+    psat.set_fixed_shunt_data(shunt)
+    psat.calculate_powerflow()
+
+    # Get updated shunt
+    shunt = psat.get_fixed_shunt_data(shunt.bus, shunt.id)
+
+    v_row = [ shunt.bus, "-", shunt.eqname, shunt.status ]
+    q_row = [ shunt.bus, "-", shunt.eqname, shunt.status ]
+
+    # Getting changed values on each transformers, generators and buses 
+    changed_transformers = psat.get_element_list("adjustable_transformer")
+    changed_generators_from_bus = elements_lists.get_generators_bus( 
+        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
+    buses = psat.get_element_list('bus', subsystem)
+
+    # Get row filled with generators changes for q_result file 
+    tmp_row = elements_func.get_changed_generator_buses_results(changed_generators_from_bus, generators_from_bus_base_mvar, 
+                                                                0, ini_handler.get_data('results','rounding_precission', 'int'))[0]
+    q_row.extend( tmp_row )
+    
+    # Get row filled with transformers changes for q_result file
+    tmp_row = elements_func.get_changed_transformers_results(changed_transformers, trfs_base_mvar, 
+                                                             0, ini_handler.get_data('results','rounding_precission', 'int'))[0]
+    q_row.extend( tmp_row )
+
+    # Get row filled with buses changes for v_result file
+    tmp_row = elements_func.get_changed_buses_results(buses, buses_base_kv, 0, ini_handler.get_data('results','rounding_precission', 'int'),
+                                                    ini_handler.get_data('results', 'node_notation_next_to_bus_name', 'boolean'))[0]
+    v_row.extend( tmp_row )
+   
+    # Add transformer's changed row to v_rows and q_rows  
+    v_rows.append(v_row)
+    q_rows.append(q_row)
+
+    # Load temporary model
+    psat.load_model(model_path + '/' + tmp_model)
+
+
 # If set to true in config, create a results folder
 if ini_handler.get_data('results','create_results_folder','boolean'):
 
@@ -237,10 +287,9 @@ if ini_handler.get_data('results','create_results_folder','boolean'):
 
 # If set to true in config, add timestamp to result files
 if ini_handler.get_data('results','add_timestamp_to_files','boolean'):
-
     timestamp = time_mgr.get_current_utc_time()
-else:
 
+else:
     timestamp = ''
 
 # Save filled rows and headers to corresponding result files
@@ -251,4 +300,13 @@ CsvFile( save_path, 'q_result.csv', q_header, q_rows, timestamp, config['results
 psat.load_model(model_path + '/' + model)
 f_handler.delete_files_from_directory(model_path,"tmp")
 
-psat.print(f"Elapsed time: {time_mgr.elapsed_time()}")
+
+duration = time_mgr.elapsed_time()
+psat.print(f"Elapsed time: {duration}")
+
+info_text = f"Model: {model}\nSubsystem: {subsystem}\nDate: {start_timestamp}\nDuration: {duration}\n\n"
++ f"Minimum upper generated MW limit for generators: {ini_handler.get_data('calculations','minimum_max_mw_generators','int')}\n"
++ f"Node KV +/- change: {ini_handler.get_data('calculations','node_kv_change_value', 'int')}\n"
++ f"Transformer ratio precission error margin: {ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float')}\n"
++ f"Shunt minumum absolute mvar value: {ini_handler.get_data('calculations', 'shunt_minimal_abs_mvar_value', 'int')}\n"
+f_handler.create_info_file(save_path, info_text)
