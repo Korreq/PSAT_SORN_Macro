@@ -6,32 +6,25 @@ from configparser import ConfigParser
     if elements are on
     if generators mvar min is not same as max
     if transformer is changeable
-    #minimum generators max_mw
-    #transformer_ratio_margin (currently 0.05)
-    #kv change value (default: 1 and -1)
     #remove node notation from name
-    #psat install location
-    #model path
-    #model name
-    #results save location
-    #rounding precission for results / calculation
-    #results file prefix
-    create results files, create folder, add timestamp
-    #subsystem
+    #rounding precission for calculation
+    create results files
+    
 '''
 
 class IniHandler:
 
+    # Read config file on instance creation
     def __init__(self, ini_file):
         self.ini_parser = ConfigParser()
         self.ini_parser.read(ini_file)
 
-    
+    # Get config data by 2d list 
     def get_config_file(self):
 
         return self.ini_parser
 
-
+    # Get specifed config by section, value_name and it's type.
     def get_data(self, section, value_name, value_type):
 
         match value_type:

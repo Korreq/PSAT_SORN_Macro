@@ -15,7 +15,6 @@ TODO:
 
     *Add missing comments
     *Result files for all elements in model 
-    *Info file ( put elapsed time there )
     *Create input file where you can decide which nodes and elements to use ( Stashed for now, looking into using database for it )
     *Change iterating from generators to nodes ( Add gens id in results file, 
     if there was multiple generators in same node)
@@ -300,10 +299,11 @@ CsvFile( save_path, 'q_result.csv', q_header, q_rows, timestamp, config['results
 psat.load_model(model_path + '/' + model)
 f_handler.delete_files_from_directory(model_path,"tmp")
 
-
+# Show whole duration of program run
 duration = time_mgr.elapsed_time()
 psat.print(f"Elapsed time: {duration}")
 
+# Create info file of results
 info_text = f"Model: {model}\nSubsystem: {subsystem}\nDate: {start_timestamp}\nDuration: {duration}\n\n"
 + f"Minimum upper generated MW limit for generators: {ini_handler.get_data('calculations','minimum_max_mw_generators','int')}\n"
 + f"Node KV +/- change: {ini_handler.get_data('calculations','node_kv_change_value', 'int')}\n"

@@ -2,6 +2,8 @@ import csv
 
 class CsvFile:
 
+    # Creates results file when created as instance, adds timestamp and prefix if specifed, 
+    # fills file with header data and rows data
     def __init__(self, path, filename, header, rows, timestamp='', prefix=''):
         
         full_name = filename

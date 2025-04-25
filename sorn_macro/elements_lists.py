@@ -5,7 +5,8 @@ class ElementsLists:
     def __init__(self):
         self.psat = PsatFunctions()
         
-
+    # Get buses that have directly connected generators. Can filter buses based on maximum MW generated on generator, 
+    # bus will be added if there's at least one generator fitting requirements
     def get_generators_bus(self, mw_min=0 ,subsys="mainsub"):
 
         generators_bus = []
@@ -13,6 +14,7 @@ class ElementsLists:
 
         generators = self.psat.get_element_list("generator", subsys)
         
+
         for generator in generators:
 
             if generator.mwmax < mw_min:
@@ -20,7 +22,8 @@ class ElementsLists:
                 continue
 
             bus = self.psat.get_bus_data(generator.bus)
-           
+
+            # If not already added, add bus and first found connected generator to list   
             if bus.number not in added_buses:
 
                 generators_bus.append( [ bus, generator ] )
@@ -29,7 +32,7 @@ class ElementsLists:
 
         return generators_bus
 
-
+    # Get from every bus in model it's current kv value
     def get_buses_base_kv(self, subsys="mainsub"):
 
         buses_kv = []
@@ -44,7 +47,7 @@ class ElementsLists:
 
         return buses_kv
     
-  
+    # Get from filtred buses with directly connected generators their mvar values
     def get_generators_from_bus_base_mvar(self, mw_min=0, subsys="mainsub"):
 
         generators_from_bus_mvar = []
@@ -57,7 +60,7 @@ class ElementsLists:
 
         return generators_from_bus_mvar
 
-
+    # Get transformers mvar, from it's control side
     def get_transformers_base_mvar(self, subsys="mainsub"):
 
         trfs_mvar = []
@@ -74,7 +77,7 @@ class ElementsLists:
 
         return trfs_mvar
     
-
+    # Get shunts, that absolute of nominal mvar value isn't less than specifed 
     def get_shunts(self, abs_minimum=0 ,subys="mainsub"):
 
         filtled_shunts = []

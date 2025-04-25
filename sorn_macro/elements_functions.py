@@ -5,7 +5,7 @@ class ElementsFunctions:
     def __init__(self):
         self.psat = PsatFunctions()
     
-
+    # Get transformer's current tap, max tap, change_tap value and if it was a tap change down 
     def get_transformer_taps(self, transformer, transformer_ratio_margin=0.05):
 
         down_change = True
@@ -49,7 +49,7 @@ class ElementsFunctions:
 
         return down_change, trf_max_tap, trf_current_tap, trf_changed_tap
     
-
+    # Get changed kv value by specified value and it's multiplier from base value 
     def get_bus_changed_kv_vmag(self, bus, value):
 
         bus_kv = float(bus.basekv) * float(bus.vmag)
@@ -58,7 +58,8 @@ class ElementsFunctions:
         
         return changed_kv_vmag, bus_kv
     
-
+    # For each updated generator get differrence from base mvar and append it to q_row list. 
+    # If first pass, then add generators name to q_header list 
     def get_changed_generator_buses_results(self, changed_generators, base_generators_mvar , first_pass, rounding_precission=2):
 
         q_header = []
@@ -76,7 +77,8 @@ class ElementsFunctions:
 
         return q_row, q_header
         
-
+    # For each updated transformers get differrence from base mvar and append it to q_row list.
+    # If first pass, then add transformers name to q_header list
     def get_changed_transformers_results(self, changed_transformers, base_transformers_mvar, first_pass, rounding_precission=2):
 
         q_header = []
@@ -95,7 +97,8 @@ class ElementsFunctions:
 
         return q_row, q_header
         
-
+    # For each updated buses get differrence from base kv and append it to v_row list.
+    # If first pass, then add nodes name to v_row list 
     def get_changed_buses_results(self, changed_buses, base_buses_kv, first_pass, rounding_precission=2, node_notation_next_to_bus_name=False):
 
         v_header = []
