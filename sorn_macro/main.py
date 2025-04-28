@@ -1,3 +1,11 @@
+'''
+    Run in terminal from Psat\bin:
+
+        PSAT "model.location" autopython "this\file.location"
+        
+'''
+
+
 import sys
 script_path = 'C:/Users/ien/Documents/Github/PSAT_SORN_Macro'
 sys.path.append(script_path + '/sorn_macro')
@@ -42,7 +50,7 @@ tmp_model = "tmp.pfb"
 start_timestamp = time_mgr.get_current_utc_time()
 
 # Load model, calculate it's powerflow and save changed model as temporary model
-psat.load_model(model_path + '/' + model)
+#psat.load_model(model_path + '/' + model)
 psat.calculate_powerflow()
 psat.save_as_tmp_model(model_path + '/' + tmp_model)
 
@@ -296,7 +304,8 @@ CsvFile( save_path, 'v_result.csv', v_header, v_rows, timestamp, config['results
 CsvFile( save_path, 'q_result.csv', q_header, q_rows, timestamp, config['results']['files_prefix'] )
 
 # Load original model and delete all temporary model files
-psat.load_model(model_path + '/' + model)
+psat.close_model(model_path + '/' + tmp_model)
+#psat.load_model(model_path + '/' + model)
 f_handler.delete_files_from_directory(model_path,"tmp")
 
 # Show whole duration of program run
@@ -304,9 +313,9 @@ duration = time_mgr.elapsed_time()
 psat.print(f"Elapsed time: {duration}")
 
 # Create info file of results
-info_text = f"Model: {model}\nSubsystem: {subsystem}\nDate: {start_timestamp}\nDuration: {duration}\n\n"
-+ f"Minimum upper generated MW limit for generators: {ini_handler.get_data('calculations','minimum_max_mw_generators','int')}\n"
-+ f"Node KV +/- change: {ini_handler.get_data('calculations','node_kv_change_value', 'int')}\n"
-+ f"Transformer ratio precission error margin: {ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float')}\n"
-+ f"Shunt minumum absolute mvar value: {ini_handler.get_data('calculations', 'shunt_minimal_abs_mvar_value', 'int')}\n"
+info_text = f"""Model: {model}\nSubsystem: {subsystem}\nDate: {start_timestamp}\nDuration: {duration}\n\n
+Minimum upper generated MW limit for generators: {ini_handler.get_data('calculations','minimum_max_mw_generators','int')}\n
+Node KV +/- change: {ini_handler.get_data('calculations','node_kv_change_value', 'int')}\n
+Transformer ratio precission error margin: {ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float')}\n
+Shunt minumum absolute mvar value: {ini_handler.get_data('calculations', 'shunt_minimal_abs_mvar_value', 'int')}\n"""
 f_handler.create_info_file(save_path, info_text)

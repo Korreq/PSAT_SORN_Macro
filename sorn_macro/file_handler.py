@@ -39,7 +39,7 @@ class FileHandler:
     # Creates info.txt file in specifed path and fills it with text
     def create_info_file(self, file_path, text):
 
-        with open(file_path + '/info.txt', "w") as file:
+        with open(f"{file_path}/info.txt", "w") as file:
 
             file.write(text)
 

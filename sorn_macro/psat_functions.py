@@ -80,12 +80,17 @@ class PsatFunctions:
 
         return elements
 
-    # Closes opened project without saveing, opens new one
+    # Closes opened project without saving, opens new one
     def load_model(self, name):
 
         psat_command('CloseProject:NoSave', self.error)
 
         psat_command(f'OpenPowerflow:"{name}"', self.error)
+
+    # Closes opened project without saving
+    def close_model(self, name):
+
+        psat_command('CloseProject:NoSave', self.error)
 
     # Save current model as new one
     def save_as_tmp_model(self, name):
