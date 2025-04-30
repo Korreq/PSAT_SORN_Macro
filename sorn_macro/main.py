@@ -21,11 +21,14 @@ from time_manager import TimeManager
 '''
 TODO:
 
-    *Add missing comments
     *Result files for all elements in model 
+    *Filter everything by 100,200,400 nodes
+    *Get only 400 - 220 and 400 - 110 transformers
+    *Don't check mvar difference on transformers
+    *Check mvar difference on each suitable generator 
+
+    *Add missing comments
     *Create input file where you can decide which nodes and elements to use ( Stashed for now, looking into using database for it )
-    *Change iterating from generators to nodes ( Add gens id in results file, 
-    if there was multiple generators in same node)
 '''
 
 #Load configuration file
@@ -143,8 +146,8 @@ for element in generators_from_bus:
     kv_difference = round( bus_new_kv - bus_kv, ini_handler.get_data('results','rounding_precission', 'int') )
 
     # Set generator bus number, generator's eqname and it's bus kv difference to row of the result files
-    v_row = [ generator.bus, "-", generator.eqname.split("-")[0], kv_difference ]
-    q_row = [ generator.bus, "-", generator.eqname.split("-")[0], kv_difference ]
+    v_row = [ generator.bus, "-", generator_bus.name.split("  ")[0], kv_difference ]
+    q_row = [ generator.bus, "-", generator_bus.name.split("  ")[0], kv_difference ]
 
    
     # Getting changed values on each transformers, generators and buses
@@ -161,12 +164,14 @@ for element in generators_from_bus:
     if tmp_header:
         q_header.extend( tmp_header )
 
+    '''
     # Get row and header filled with transformers changes for q_result file
     tmp_row, tmp_header = elements_func.get_changed_transformers_results(changed_transformers, trfs_base_mvar, first_pass, 
                                                                          ini_handler.get_data('results','rounding_precission', 'int'))
     q_row.extend( tmp_row )
     if tmp_header:
         q_header.extend( tmp_header )
+    '''
 
     # Get row and header filled with buses changes for v_result file
     tmp_row, tmp_header = elements_func.get_changed_buses_results(buses, buses_base_kv, first_pass, ini_handler.get_data('results','rounding_precission', 'int'), 
@@ -221,11 +226,13 @@ for transformer in transformers:
     tmp_row = elements_func.get_changed_generator_buses_results(changed_generators_from_bus, generators_from_bus_base_mvar, 
                                                                 0, ini_handler.get_data('results','rounding_precission', 'int'))[0]
     q_row.extend( tmp_row )
-    
+
+    '''
     # Get row filled with transformers changes for q_result file
     tmp_row = elements_func.get_changed_transformers_results(changed_transformers, trfs_base_mvar, 
                                                              0, ini_handler.get_data('results','rounding_precission', 'int'))[0]
     q_row.extend( tmp_row )
+    '''
 
     # Get row filled with buses changes for v_result file
     tmp_row = elements_func.get_changed_buses_results(buses, buses_base_kv, 0, ini_handler.get_data('results','rounding_precission', 'int'),
@@ -268,11 +275,14 @@ for shunt in shunts:
                                                                 0, ini_handler.get_data('results','rounding_precission', 'int'))[0]
     q_row.extend( tmp_row )
     
+
+    '''
     # Get row filled with transformers changes for q_result file
     tmp_row = elements_func.get_changed_transformers_results(changed_transformers, trfs_base_mvar, 
                                                              0, ini_handler.get_data('results','rounding_precission', 'int'))[0]
     q_row.extend( tmp_row )
-
+    '''
+    
     # Get row filled with buses changes for v_result file
     tmp_row = elements_func.get_changed_buses_results(buses, buses_base_kv, 0, ini_handler.get_data('results','rounding_precission', 'int'),
                                                     ini_handler.get_data('results', 'node_notation_next_to_bus_name', 'boolean'))[0]
@@ -317,5 +327,5 @@ info_text = f"""Model: {model}\nSubsystem: {subsystem}\nDate: {start_timestamp}\
 Minimum upper generated MW limit for generators: {ini_handler.get_data('calculations','minimum_max_mw_generators','int')}\n
 Node KV +/- change: {ini_handler.get_data('calculations','node_kv_change_value', 'int')}\n
 Transformer ratio precission error margin: {ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float')}\n
-Shunt minumum absolute mvar value: {ini_handler.get_data('calculations', 'shunt_minimal_abs_mvar_value', 'int')}\n"""
+Shunt minimum absolute mvar value: {ini_handler.get_data('calculations', 'shunt_minimal_abs_mvar_value', 'int')}\n"""
 f_handler.create_info_file(save_path, info_text)
