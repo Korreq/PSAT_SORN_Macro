@@ -16,9 +16,9 @@ class CsvFile:
         
         self.full_path = path + '/' + full_name
 
-        with open(self.full_path, 'w') as file:
+        with open(self.full_path, 'w', newline='') as file:
 
-            writer = csv.writer(file, dialect="excel")
+            writer = csv.writer(file, dialect="excel-tab")
 
             writer.writerow(header)
 

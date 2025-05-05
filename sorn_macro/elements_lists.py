@@ -80,7 +80,7 @@ class ElementsLists:
     # Get shunts, that absolute of nominal mvar value isn't less than specifed 
     def get_shunts(self, abs_minimum=0 ,subys="mainsub"):
 
-        filtled_shunts = []
+        filtred_shunts = []
 
         shunts = self.psat.get_element_list("fixed_shunt", subys)
 
@@ -90,6 +90,27 @@ class ElementsLists:
 
                 continue
 
-            filtled_shunts.append(shunt)
+            filtred_shunts.append(shunt)
 
-        return filtled_shunts
+        return filtred_shunts
+    
+    # Get transformers, if filter set to true, 
+    # return only transformers connected to/from 400 base kv buses to/from 220/110 base kv buses 
+    def get_transformers(self, keep_transformers_without_connection_to_400=True, subsys="mainsub"):
+
+        filtred_transformers = []
+
+        transformers = self.psat.get_element_list("adjustable_transformer",subsys)
+
+        for transformer in transformers:
+
+            from_bus_kv, to_bus_kv = self.psat.get_bus_data(transformer.frbus).basekv, self.psat.get_bus_data(transformer.tobus).basekv
+
+            if not keep_transformers_without_connection_to_400:
+                if ( from_bus_kv == 400 or to_bus_kv == 400 ) and ( from_bus_kv in [110,220] or to_bus_kv in [110,220] ):
+                    filtred_transformers.append(transformer)
+
+            else:
+                filtred_transformers.append(transformer)
+           
+        return filtred_transformers
