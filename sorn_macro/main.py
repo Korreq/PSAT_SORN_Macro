@@ -3,14 +3,17 @@
 
         Example:
 
-        C:/DSATools_24-SL/Psat/bin> PSAT "C:/Users/user/Documents/model.pfb" autopython "C:/Users/user/Documents/PSAT_SORN_MACRO/sorn_macro/main.py"
+        C:/DSATools_24-SL/Psat/bin> 
+        PSAT "C:/Users/user/Documents/model.pfb" autopython "C:/Users/user/Documents/PSAT_SORN_MACRO/sorn_macro/main.py"
         
 """
 
 import locale
 import sys
+
 script_path = 'C:/Users/ien/Documents/Github/PSAT_SORN_Macro'
 sys.path.append(script_path + '/sorn_macro')
+
 
 from psat_functions import PsatFunctions
 from elements_lists import ElementsLists
@@ -27,8 +30,10 @@ TODO:
     *Filter everything by 100,200,400 nodes
     *Get only 400 - 220 and 400 - 110 transformers X
     *Don't check mvar difference on transformers X
-    *Check mvar difference on each suitable generator 
+    *Check mvar difference on each suitable generator X
     *Add missing data to info file
+    *Fix problem with base kv being left in some bus names
+    
 
     *Add missing comments
     *Create input file where you can decide which nodes and elements to use ( Stashed for now, looking into using database for it )
@@ -67,10 +72,8 @@ psat.save_as_tmp_model(model_path + '/' + tmp_model)
 # Get arrays with all generators 
 # and transformers in loaded model
 all_generators = psat.get_element_list('generator', subsystem)
-#transformers = psat.get_element_list('adjustable_transformer', subsystem)
 # Get arrays with base values for buses, transformers, buses with connected suitable generators
 buses_base_kv = elements_lists.get_buses_base_kv(subsystem)
-#trfs_base_mvar = elements_lists.get_transformers_base_mvar(subsystem)
 generators_from_bus_base_mvar = elements_lists.get_generators_from_bus_base_mvar(
     ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
 # Get arrays with buses that have suitable generator connected, filtred shunts and filtred transformers
@@ -99,7 +102,8 @@ for element in generators_from_bus:
     generator = element[1]
                                                                                     
     # Getting new kv change from base value and calculated bus kv
-    changed_kv_vmag, bus_kv = elements_func.get_bus_changed_kv_vmag(generator_bus, ini_handler.get_data('calculations','node_kv_change_value', 'int') )
+    changed_kv_vmag, bus_kv = elements_func.get_bus_changed_kv_vmag(generator_bus, 
+                                        ini_handler.get_data('calculations','node_kv_change_value', 'int') )
 
     # Setting changed kv value to generator's lower and upper limits 
     generator.vhi = generator.vlo = changed_kv_vmag
@@ -164,7 +168,7 @@ for element in generators_from_bus:
     ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
 
     changed_generators_from_bus = elements_lists.get_generators_bus( 
-        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
+        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem, False)
     buses = psat.get_element_list('bus', subsystem)
 
 
@@ -176,8 +180,9 @@ for element in generators_from_bus:
         q_header.extend( tmp_header )
 
     # Get row and header filled with buses changes for v_result file
-    tmp_row, tmp_header = elements_func.get_changed_buses_results(buses, buses_base_kv, first_pass, ini_handler.get_data('results','rounding_precission', 'int'), 
-                                                                  ini_handler.get_data('results', 'node_notation_next_to_bus_name', 'boolean'))
+    tmp_row, tmp_header = elements_func.get_changed_buses_results(buses, buses_base_kv, first_pass, 
+                                            ini_handler.get_data('results','rounding_precission', 'int'), 
+                                            ini_handler.get_data('results', 'node_notation_next_to_bus_name', 'boolean'))
     v_row.extend( tmp_row )
     if tmp_header:
         v_header.extend( tmp_header )
@@ -224,7 +229,7 @@ for transformer in transformers:
     ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
 
     changed_generators_from_bus = elements_lists.get_generators_bus( 
-        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
+        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem, False)
     buses = psat.get_element_list('bus', subsystem)
 
     # Get row filled with generators changes for q_result file 
@@ -233,7 +238,8 @@ for transformer in transformers:
     q_row.extend( tmp_row )
 
     # Get row filled with buses changes for v_result file
-    tmp_row = elements_func.get_changed_buses_results(buses, buses_base_kv, 0, ini_handler.get_data('results','rounding_precission', 'int'),
+    tmp_row = elements_func.get_changed_buses_results(buses, buses_base_kv, 0, 
+                                                    ini_handler.get_data('results','rounding_precission', 'int'),
                                                     ini_handler.get_data('results', 'node_notation_next_to_bus_name', 'boolean'))[0]
     v_row.extend( tmp_row )
    
@@ -267,7 +273,7 @@ for shunt in shunts:
     ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
 
     changed_generators_from_bus = elements_lists.get_generators_bus( 
-        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
+        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem, False)
     buses = psat.get_element_list('bus', subsystem)
 
     # Get row filled with generators changes for q_result file 
@@ -276,7 +282,8 @@ for shunt in shunts:
     q_row.extend( tmp_row )
     
     # Get row filled with buses changes for v_result file
-    tmp_row = elements_func.get_changed_buses_results(buses, buses_base_kv, 0, ini_handler.get_data('results','rounding_precission', 'int'),
+    tmp_row = elements_func.get_changed_buses_results(buses, buses_base_kv, 0, 
+                                                    ini_handler.get_data('results','rounding_precission', 'int'),
                                                     ini_handler.get_data('results', 'node_notation_next_to_bus_name', 'boolean'))[0]
     v_row.extend( tmp_row )
    

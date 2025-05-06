@@ -7,7 +7,7 @@ class ElementsLists:
         
     # Get buses that have directly connected generators. Can filter buses based on maximum MW generated on generator, 
     # bus will be added if there's at least one generator fitting requirements
-    def get_generators_bus(self, mw_min=0 ,subsys="mainsub"):
+    def get_generators_bus(self, mw_min=0 ,subsys="mainsub", skip_generators_on_same_bus=True):
 
         generators_bus = []
         added_buses = []
@@ -24,7 +24,7 @@ class ElementsLists:
             bus = self.psat.get_bus_data(generator.bus)
 
             # If not already added, add bus and first found connected generator to list   
-            if bus.number not in added_buses:
+            if bus.number not in added_buses or not skip_generators_on_same_bus:
 
                 generators_bus.append( [ bus, generator ] )
                 
@@ -52,7 +52,7 @@ class ElementsLists:
 
         generators_from_bus_mvar = []
 
-        buses_with_generators = self.get_generators_bus(mw_min, subsys)
+        buses_with_generators = self.get_generators_bus(mw_min, subsys, False)
 
         for buses in buses_with_generators:
 

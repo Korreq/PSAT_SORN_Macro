@@ -69,15 +69,10 @@ class ElementsFunctions:
         for i in range( len( changed_generators ) ):
 
             if first_pass:
-                q_header.append( changed_generators[i][1].eqname.split("-")[0] )
-            '''
-            generator_q_change = round( float( changed_generators[i][1].mvar ) 
-                                       - float( base_generators_mvar[i] ), rounding_precission )
-            '''
+                q_header.append( changed_generators[i][1].eqname )
+        
             generator_q_change = locale.format_string('%G', float( changed_generators[i][1].mvar ) 
                                                       - float( base_generators_mvar[i] ), grouping=True )
-
-
 
             q_row.append( generator_q_change )
 
@@ -96,10 +91,7 @@ class ElementsFunctions:
                 q_header.append( changed_transformers[i].name )
 
             trf_mvar = changed_transformers[i].qfr if changed_transformers[i].meter == "F" else changed_transformers[i].qto
-            '''
-            trf_q_change = round( float( trf_mvar ) 
-                                 - float( base_transformers_mvar[i] ), rounding_precission )
-            '''
+        
             trf_q_change = locale.format_string('%G', float( trf_mvar ) - float( base_transformers_mvar[i] ), grouping=True )
 
 
@@ -126,9 +118,7 @@ class ElementsFunctions:
                     v_header.append( changed_buses[i].name.split("  ")[0] )
 
             bus_kv = float(changed_buses[i].basekv) * float(changed_buses[i].vmag)
-            #bus_kv = round( float(changed_buses[i].basekv) * float(changed_buses[i].vmag), 2 )
-            #bus_kv_change = round( bus_kv - base_buses_kv[i], rounding_precission )
-
+    
             bus_kv_change = locale.format_string('%G', bus_kv - base_buses_kv[i], grouping=True)
 
             v_row.append( bus_kv_change )
