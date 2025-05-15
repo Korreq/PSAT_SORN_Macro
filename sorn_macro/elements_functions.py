@@ -59,9 +59,9 @@ class ElementsFunctions:
         
         return changed_kv_vmag, bus_kv
     
-    # For each updated generator get differrence from base mvar and append it to q_row list. 
-    # If first pass, then add generators name to q_header list 
-    def get_changed_generator_buses_results(self, changed_generators, base_generators_mvar , first_pass, rounding_precission=2):
+    # For each updated generator bus get differrence from base mvar and append it to q_row list. 
+    # If first pass, then add bus name to q_header list 
+    def get_changed_generator_buses_results(self, changed_generators, base_generators_mvar , first_pass):
 
         q_header = []
         q_row = []
@@ -71,38 +71,16 @@ class ElementsFunctions:
             if first_pass:
                 q_header.append( changed_generators[i][1].eqname )
         
-            generator_q_change = locale.format_string('%G', float( changed_generators[i][1].mvar ) 
+            bus_q_change = locale.format_string('%G', float( changed_generators[i][1].mvar ) 
                                                       - float( base_generators_mvar[i] ), grouping=True )
 
-            q_row.append( generator_q_change )
-
-        return q_row, q_header
-        
-    # For each updated transformers get differrence from base mvar and append it to q_row list.
-    # If first pass, then add transformers name to q_header list
-    def get_changed_transformers_results(self, changed_transformers, base_transformers_mvar, first_pass, rounding_precission=2):
-
-        q_header = []
-        q_row = []
-
-        for i in range( len( changed_transformers ) ):
-
-            if first_pass:
-                q_header.append( changed_transformers[i].name )
-
-            trf_mvar = changed_transformers[i].qfr if changed_transformers[i].meter == "F" else changed_transformers[i].qto
-        
-            trf_q_change = locale.format_string('%G', float( trf_mvar ) - float( base_transformers_mvar[i] ), grouping=True )
-
-
-
-            q_row.append( trf_q_change )
+            q_row.append( bus_q_change )
 
         return q_row, q_header
         
     # For each updated buses get differrence from base kv and append it to v_row list.
     # If first pass, then add nodes name to v_row list 
-    def get_changed_buses_results(self, changed_buses, base_buses_kv, first_pass, rounding_precission=2, node_notation_next_to_bus_name=False):
+    def get_changed_buses_results(self, changed_buses, base_buses_kv, first_pass):
 
         v_header = []
         v_row = []
@@ -110,12 +88,7 @@ class ElementsFunctions:
         for i in range( len( changed_buses ) ):
 
             if first_pass:
-
-                if node_notation_next_to_bus_name:
-                    v_header.append( changed_buses[i].name )
-
-                else:
-                    v_header.append( changed_buses[i].name.split("  ")[0] )
+                v_header.append( changed_buses[i].name[:-4].strip() )
 
             bus_kv = float(changed_buses[i].basekv) * float(changed_buses[i].vmag)
     

@@ -88,7 +88,7 @@ class PsatFunctions:
         psat_command(f'OpenPowerflow:"{name}"', self.error)
 
     # Closes opened project without saving
-    def close_model(self, name):
+    def close_model(self):
 
         psat_command('CloseProject:NoSave', self.error)
 

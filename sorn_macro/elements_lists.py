@@ -59,24 +59,7 @@ class ElementsLists:
             generators_from_bus_mvar.append( buses[1].mvar )
 
         return generators_from_bus_mvar
-
-    # Get transformers mvar, from it's control side
-    def get_transformers_base_mvar(self, subsys="mainsub"):
-
-        trfs_mvar = []
-
-        trf_mvar = None
-
-        trfs = self.psat.get_element_list("adjustable_transformer", subsys)
-
-        for trf in trfs:
-
-            trf_mvar = trf.qfr if trf.meter == "F" else trf.qto
-
-            trfs_mvar.append( trf_mvar )
-
-        return trfs_mvar
-    
+  
     # Get shunts, that absolute of nominal mvar value isn't less than specifed 
     def get_shunts(self, abs_minimum=0 ,subys="mainsub"):
 
