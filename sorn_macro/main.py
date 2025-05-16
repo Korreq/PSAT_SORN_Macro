@@ -26,12 +26,12 @@ from time_manager import TimeManager
 TODO:
 
     *Result files for all elements in model 
-    *Filter everything by 100,200,400 nodes
+    *Filter everything by 100,200,400 nodes X
     *Get only 400 - 220 and 400 - 110 transformers X
     *Don't check mvar difference on transformers X
     *Check mvar difference on each suitable generator X
-    *Add missing data to info file
-    *Fix problem with base kv being left in some bus names
+    *Add missing data to info file ~
+    *Fix problem with base kv being left in some bus names X
     
 
     *Add missing comments
@@ -199,6 +199,7 @@ for transformer in transformers:
     # If able change tap down, if not change tap up 
     down_change = elements_func.get_transformer_taps(transformer, 
                         ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )[0]
+    
     if(down_change):
         transformer.fsratio += transformer.stepratio
     else:
@@ -285,7 +286,6 @@ for shunt in shunts:
 
 # If set to true in config, create a results folder
 if ini_handler.get_data('results','create_results_folder','boolean'):
-
     save_path = f_handler.create_directory(save_path, config['results']['folder_name'] , 
                                            ini_handler.get_data('results','add_timestamp_to_folder','boolean'))
 
@@ -315,7 +315,7 @@ Minimum upper generated MW limit for generators: {ini_handler.get_data('calculat
 Node KV +/- change: {ini_handler.get_data('calculations','node_kv_change_value', 'int')}\n
 Transformer ratio precission error margin: {ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float')}\n
 Shunt minimum absolute mvar value: {ini_handler.get_data('calculations', 'shunt_minimal_abs_mvar_value', 'int')}\n
-Keep transformers not connected to 400 bus" {ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean')}\n
+Keep transformers not connected to 400 bus: {ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean')}\n
 """
 f_handler.create_info_file(save_path, info_text)
 

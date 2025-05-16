@@ -17,11 +17,12 @@ class ElementsLists:
 
         for generator in generators:
 
-            if generator.mwmax < mw_min:
+            bus = self.psat.get_bus_data(generator.bus)
+
+            # Skip generator if max mw is not enough and if generator's bus base kv is not 110,220 or 400
+            if generator.mwmax < mw_min or bus.basekv not in [110,220,400]:
 
                 continue
-
-            bus = self.psat.get_bus_data(generator.bus)
 
             # If not already added, add bus and first found connected generator to list   
             if bus.number not in added_buses or not skip_generators_on_same_bus:
@@ -40,6 +41,10 @@ class ElementsLists:
         buses = self.psat.get_element_list("bus", subsys)
 
         for bus in buses:
+
+            #Skip if bus base kv is not 110,220 or 400
+            if bus.basekv not in [110,220,400]:
+                continue
 
             bus_kv = round( float(bus.basekv) * float(bus.vmag), 2 )
 

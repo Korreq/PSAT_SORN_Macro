@@ -29,9 +29,9 @@ class ElementsFunctions:
         while trf_pass < trf_max:
 
             if( 
-                round(trf_pass, 4) >= round( 
+                round(trf_pass, 4) > round( 
                     trf_current_ratio - (transformer_ratio_margin * trf_current_ratio), 4 ) and
-                round(trf_pass, 4) <= round( 
+                round(trf_pass, 4) < round( 
                     trf_current_ratio + (transformer_ratio_margin * trf_current_ratio), 4 )  
             ):
                 trf_current_tap = trf_max_tap
