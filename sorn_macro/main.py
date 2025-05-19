@@ -62,14 +62,25 @@ subsystem = config['psat']['subsystem']
 tmp_model = "tmp.pfb"
 start_timestamp = time_mgr.get_current_utc_time()
 
+# If set to true in config, add timestamp to result files
+timestamp = start_timestamp if ini_handler.get_data('results','add_timestamp_to_files','boolean') else ''
+
+# If set to true in config, create a results folder
+if ini_handler.get_data('results','create_results_folder','boolean'):
+    save_path = f_handler.create_directory(save_path, config['results']['folder_name'] , 
+                                           ini_handler.get_data('results','add_timestamp_to_folder','boolean'))
+
+csv = CsvFile(save_path, timestamp, config['results']['files_prefix'])
+
 # Load model, calculate it's powerflow and save changed model as temporary model
 #psat.load_model(model_path + '/' + model)
 psat.calculate_powerflow()
 psat.save_as_tmp_model(model_path + '/' + tmp_model)
 
 # Get arrays with all generators 
-# and transformers in loaded model
+# and 400,220,110 buses in loaded model
 all_generators = psat.get_element_list('generator', subsystem)
+buses = psat.get_element_list('bus', subsystem)
 # Get arrays with base values for buses, transformers, buses with connected suitable generators
 buses_base_kv = elements_lists.get_buses_base_kv(subsystem)
 generators_from_bus_base_mvar = elements_lists.get_generators_from_bus_base_mvar(
@@ -81,6 +92,14 @@ shunts = elements_lists.get_shunts(
     ini_handler.get_data('calculations','shunt_minimal_abs_mvar_value','int'), subsystem)
 transformers = elements_lists.get_transformers(
     ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
+
+
+
+csv.write_buses_file(buses)
+csv.write_gens_file(all_generators)
+csv.write_shunts_file(shunts)
+csv.wrtie_trfs_file(transformers, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )
+
 
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference/State']
 q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference/State']
@@ -283,7 +302,7 @@ for shunt in shunts:
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
 
-
+'''
 # If set to true in config, create a results folder
 if ini_handler.get_data('results','create_results_folder','boolean'):
     save_path = f_handler.create_directory(save_path, config['results']['folder_name'] , 
@@ -295,11 +314,14 @@ if ini_handler.get_data('results','add_timestamp_to_files','boolean'):
 
 else:
     timestamp = ''
-
+'''
 # Save filled rows and headers to corresponding result files
+csv.write_to_file("v_result", v_header, v_rows)
+csv.write_to_file("q_result", q_header, q_rows)
+'''
 CsvFile( save_path, 'v_result.csv', v_header, v_rows, timestamp, config['results']['files_prefix'] )
 CsvFile( save_path, 'q_result.csv', q_header, q_rows, timestamp, config['results']['files_prefix'] )
-
+'''
 # Load original model and delete all temporary model files
 psat.close_model()
 #psat.load_model(model_path + '/' + model)

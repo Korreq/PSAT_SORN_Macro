@@ -59,6 +59,26 @@ class ElementsFunctions:
         
         return changed_kv_vmag, bus_kv
     
+    # Get bus type name depending on it's type number
+    def get_bus_type(self, bus):
+
+        types = ["Load","Generator","Swing","Out of service"]
+
+        if bus.type > 0 and bus.type < 5:
+
+            name = types[ bus.type - 1 ]
+        else:
+            name = "Unknown"
+
+        return name
+
+    # Get formated bus name from bus id
+    def get_bus_name_from_id(self, id):
+
+        bus = self.psat.get_bus_data(id)
+
+        return bus.name[:-4].strip()
+
     # For each updated generator bus get differrence from base mvar and append it to q_row list. 
     # If first pass, then add bus name to q_header list 
     def get_changed_generator_buses_results(self, changed_generators, base_generators_mvar , first_pass):
