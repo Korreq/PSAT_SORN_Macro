@@ -1,18 +1,15 @@
 """
-    Run this script in terminal from Psat/bin:
+    To start this macro start it by running run.py in terminal:
 
-        Example:
-
-        C:/DSATools_24-SL/Psat/bin> 
-        PSAT "C:/Users/user/Documents/model.pfb" autopython "C:/Users/user/Documents/PSAT_SORN_MACRO/sorn_macro/main.py"
+        python sorn_macro/run.py
         
 """
 
 import locale
+import os
 import sys
 
-script_path = 'C:/Users/ien/Documents/Github/PSAT_SORN_Macro'
-sys.path.append(script_path + '/sorn_macro')
+sys.path.append(os.environ["SORN_WORKING_DIRECTORY"] + '/sorn_macro')
 
 from psat_functions import PsatFunctions
 from elements_lists import ElementsLists
@@ -25,7 +22,7 @@ from time_manager import TimeManager
 '''
 TODO:
 
-    *Result files for all elements in model 
+    *Result files for all elements in model ~
     *Filter everything by 100,200,400 nodes X
     *Get only 400 - 220 and 400 - 110 transformers X
     *Don't check mvar difference on transformers X
@@ -33,20 +30,20 @@ TODO:
     *Add missing data to info file ~
     *Fix problem with base kv being left in some bus names X
     
-
     *Add missing comments
     *Create input file where you can decide which nodes and elements to use ( Stashed for now, looking into using database for it )
 '''
 
-#Load configuration file
-ini_handler = IniHandler(script_path + '/files/config.ini')
+#Load configuration file using system variable, then unset said variable and get config file's dictionary 
+ini_handler = IniHandler(os.environ["SORN_WORKING_DIRECTORY"] + '/files/config.ini')
+os.environ.pop("SORN_WORKING_DIRECTORY")
 config = ini_handler.get_config_file()
 
 #Set locale based on system's locale
 locale.setlocale(locale.LC_ALL, '')
 
 #Add psat isntall loacation to enviromental variables
-sys.path.append( config['psat']['psat_installation_path'] + "/bin/python" )
+sys.path.append( config['psat']['psat_installation_path'] + "/python" )
 
 psat = PsatFunctions()
 elements_lists = ElementsLists()
@@ -70,10 +67,10 @@ if ini_handler.get_data('results','create_results_folder','boolean'):
     save_path = f_handler.create_directory(save_path, config['results']['folder_name'] , 
                                            ini_handler.get_data('results','add_timestamp_to_folder','boolean'))
 
+# Initialize csv files handler
 csv = CsvFile(save_path, timestamp, config['results']['files_prefix'])
 
-# Load model, calculate it's powerflow and save changed model as temporary model
-#psat.load_model(model_path + '/' + model)
+# Calculate powerflow and save changed model as temporary model
 psat.calculate_powerflow()
 psat.save_as_tmp_model(model_path + '/' + tmp_model)
 
@@ -93,13 +90,11 @@ shunts = elements_lists.get_shunts(
 transformers = elements_lists.get_transformers(
     ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
 
-
-
+# Create files for model's elements
 csv.write_buses_file(buses)
 csv.write_gens_file(all_generators)
 csv.write_shunts_file(shunts)
 csv.wrtie_trfs_file(transformers, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )
-
 
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference/State']
 q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference/State']
@@ -302,26 +297,11 @@ for shunt in shunts:
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
 
-'''
-# If set to true in config, create a results folder
-if ini_handler.get_data('results','create_results_folder','boolean'):
-    save_path = f_handler.create_directory(save_path, config['results']['folder_name'] , 
-                                           ini_handler.get_data('results','add_timestamp_to_folder','boolean'))
 
-# If set to true in config, add timestamp to result files
-if ini_handler.get_data('results','add_timestamp_to_files','boolean'):
-    timestamp = time_mgr.get_current_utc_time()
-
-else:
-    timestamp = ''
-'''
 # Save filled rows and headers to corresponding result files
 csv.write_to_file("v_result", v_header, v_rows)
 csv.write_to_file("q_result", q_header, q_rows)
-'''
-CsvFile( save_path, 'v_result.csv', v_header, v_rows, timestamp, config['results']['files_prefix'] )
-CsvFile( save_path, 'q_result.csv', q_header, q_rows, timestamp, config['results']['files_prefix'] )
-'''
+
 # Load original model and delete all temporary model files
 psat.close_model()
 #psat.load_model(model_path + '/' + model)
@@ -332,11 +312,11 @@ duration = time_mgr.elapsed_time()
 psat.print(f"Elapsed time: {duration}")
 
 # Create info file of results
-info_text = f"""Model: {model}\nSubsystem: {subsystem}\nDate: {start_timestamp}\nDuration: {duration}\n\n
-Minimum upper generated MW limit for generators: {ini_handler.get_data('calculations','minimum_max_mw_generators','int')}\n
-Node KV +/- change: {ini_handler.get_data('calculations','node_kv_change_value', 'int')}\n
-Transformer ratio precission error margin: {ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float')}\n
-Shunt minimum absolute mvar value: {ini_handler.get_data('calculations', 'shunt_minimal_abs_mvar_value', 'int')}\n
+info_text = f"""Model: {model}\nSubsystem: {subsystem}\nDate: {start_timestamp}\nDuration: {duration}\n
+Minimum upper generated MW limit for generators: {ini_handler.get_data('calculations','minimum_max_mw_generators','int')}
+Node KV +/- change: {ini_handler.get_data('calculations','node_kv_change_value', 'int')}
+Transformer ratio precission error margin: {ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float')}
+Shunt minimum absolute mvar value: {ini_handler.get_data('calculations', 'shunt_minimal_abs_mvar_value', 'int')}
 Keep transformers not connected to 400 bus: {ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean')}\n
 """
 f_handler.create_info_file(save_path, info_text)
