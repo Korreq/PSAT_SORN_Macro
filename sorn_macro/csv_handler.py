@@ -4,30 +4,8 @@ from elements_functions import ElementsFunctions
 
 
 class CsvFile:
-    '''
-    # Creates results file when created as instance, adds timestamp and prefix if specifed, 
-    # fills file with header data and rows data
-    def __init__(self, path, filename, header, rows, timestamp='', prefix=''):
-        
-        full_name = filename
-
-        if prefix:
-            full_name = prefix + '_' + full_name
-
-        if timestamp:
-            full_name = timestamp + '_' + full_name 
-        
-        self.full_path = path + '/' + full_name
-
-        with open(self.full_path, 'w', newline='') as file:
-
-            writer = csv.writer(file, dialect="excel-tab")
-
-            writer.writerow(header)
-
-            writer.writerows(rows)
-    '''
-
+ 
+    # Set file save location, name formating for every csv file and create csv dialect with semicolon as a delimiter
     def __init__(self, path, timestamp='', prefix=''):
 
         self.functions = ElementsFunctions()
@@ -42,14 +20,16 @@ class CsvFile:
         if prefix:
             self.name_addons += prefix + '_'
 
-       
+        csv.register_dialect('excel-semicolon','excel', delimiter=';')
+
+    # Write header and rows to file using dialect and name set in init 
     def write_to_file(self, name, header, rows):
 
         full_path = self.path + "/" + self.name_addons + name + ".csv"
 
         with open(full_path, 'w', newline='') as file:
 
-            writer = csv.writer(file, dialect="excel-tab")
+            writer = csv.writer(file, dialect="excel-semicolon")
 
             writer.writerow(header)
 
@@ -99,7 +79,7 @@ class CsvFile:
     
     def wrtie_trfs_file(self, transformers, margin):
 
-        header = ["From Bus", "To Bus", "Name", "Current tap", "Max tap", "Tap position"]
+        header = ["From Bus", "To Bus", "Name", "Current tap", "Max tap"]
 
         rows = []
 
@@ -108,6 +88,6 @@ class CsvFile:
             max_tap, current_tap = self.functions.get_transformer_taps(trf, margin)[1:3]
 
             rows.append( [ self.functions.get_bus_name_from_id(trf.frbus), self.functions.get_bus_name_from_id(trf.tobus), 
-                          trf.name, current_tap, max_tap, trf.ctlside ] )
+                          trf.name, current_tap, max_tap ] )
             
         self.write_to_file("transformers", header, rows)

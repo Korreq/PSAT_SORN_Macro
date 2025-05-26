@@ -1,7 +1,7 @@
 """
-    To start this macro start it by running run.py in terminal:
+    To start this macro start it by running run.py in terminal from sorn_macro directory:
 
-        python sorn_macro/run.py
+        python run.py
         
 """
 
@@ -22,14 +22,8 @@ from time_manager import TimeManager
 '''
 TODO:
 
-    *Result files for all elements in model ~
-    *Filter everything by 100,200,400 nodes X
-    *Get only 400 - 220 and 400 - 110 transformers X
-    *Don't check mvar difference on transformers X
-    *Check mvar difference on each suitable generator X
-    *Add missing data to info file ~
-    *Fix problem with base kv being left in some bus names X
-    
+    *Result files for all elements in model
+    *Add missing data to info file
     *Add missing comments
     *Create input file where you can decide which nodes and elements to use ( Stashed for now, looking into using database for it )
 '''
@@ -56,6 +50,7 @@ model_path = config['psat']['psat_model_path']
 model = config['psat']['psat_model_name']
 save_path = config['results']['results_save_path']
 subsystem = config['psat']['subsystem']
+
 tmp_model = "tmp.pfb"
 start_timestamp = time_mgr.get_current_utc_time()
 
@@ -65,7 +60,7 @@ timestamp = start_timestamp if ini_handler.get_data('results','add_timestamp_to_
 # If set to true in config, create a results folder
 if ini_handler.get_data('results','create_results_folder','boolean'):
     save_path = f_handler.create_directory(save_path, config['results']['folder_name'] , 
-                                           ini_handler.get_data('results','add_timestamp_to_folder','boolean'))
+    ini_handler.get_data('results','add_timestamp_to_folder','boolean'))
 
 # Initialize csv files handler
 csv = CsvFile(save_path, timestamp, config['results']['files_prefix'])
@@ -160,20 +155,17 @@ for element in generators_from_bus:
 
         psat.calculate_powerflow()
     
-
     # Get generator bus with new calculated values
     generator_bus = psat.get_bus_data(generator_bus.number)
 
     # Calculate bus new kv and it's kv change from base value 
     bus_new_kv = float(generator_bus.basekv) * float(generator_bus.vmag)
-    
     kv_difference = round( bus_new_kv - bus_kv, ini_handler.get_data('results','rounding_precission', 'int') )
 
     # Set generator bus number, generator's eqname and it's bus kv difference to row of the result files
     v_row = [ generator.bus, "-", generator_bus.name[:-4].strip(), locale.format_string('%G',kv_difference) ]
     q_row = [ generator.bus, "-", generator_bus.name[:-4].strip(), locale.format_string('%G',kv_difference) ]
 
-   
     # Getting changed values on each transformers, generators and buses
     changed_transformers = elements_lists.get_transformers(
     ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
@@ -181,7 +173,6 @@ for element in generators_from_bus:
     changed_generators_from_bus = elements_lists.get_generators_bus( 
         ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem, False)
     buses = psat.get_element_list('bus', subsystem)
-
 
     # Get row and header filled with generators changes for q_result file 
     tmp_row, tmp_header = elements_func.get_changed_generator_buses_results(changed_generators_from_bus, generators_from_bus_base_mvar, first_pass)
@@ -202,7 +193,6 @@ for element in generators_from_bus:
 
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
-
 
 # Iterate through each suitable transformer 
 for transformer in transformers:
@@ -256,7 +246,6 @@ for transformer in transformers:
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
 
-
 # Iterate through each suitable shunts
 for shunt in shunts:
 
@@ -297,14 +286,12 @@ for shunt in shunts:
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
 
-
 # Save filled rows and headers to corresponding result files
 csv.write_to_file("v_result", v_header, v_rows)
 csv.write_to_file("q_result", q_header, q_rows)
 
-# Load original model and delete all temporary model files
+# Close model and delete all temporary model files
 psat.close_model()
-#psat.load_model(model_path + '/' + model)
 f_handler.delete_files_from_directory(model_path,"tmp")
 
 # Show whole duration of program run
