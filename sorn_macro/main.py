@@ -22,19 +22,20 @@ from time_manager import TimeManager
 '''
 TODO:
 
+    *Optimize changing transformers tap
     *Result files for all elements in model
     *Add missing data to info file
     *Add missing comments
     *Create input file where you can decide which nodes and elements to use ( Stashed for now, looking into using database for it )
 '''
 
+#Set locale based on system's locale
+locale.setlocale(locale.LC_ALL, '')
+
 #Load configuration file using system variable, then unset said variable and get config file's dictionary 
 ini_handler = IniHandler(os.environ["SORN_WORKING_DIRECTORY"] + '/files/config.ini')
 os.environ.pop("SORN_WORKING_DIRECTORY")
 config = ini_handler.get_config_file()
-
-#Set locale based on system's locale
-locale.setlocale(locale.LC_ALL, '')
 
 #Add psat isntall loacation to enviromental variables
 sys.path.append( config['psat']['psat_installation_path'] + "/python" )
@@ -100,76 +101,19 @@ tmp_header = []
 first_pass = True
 
 # Iterate through each node, that has sutaible generator directly connected  
-for element in generators_from_bus:
+for bus_number_key in generators_from_bus:
 
-    v_row = [] 
-    q_row = []
-
-    generator_bus, generator = element
-                                                                                    
-    # Getting new kv change from base value and calculated bus kv
-    changed_kv_vmag, bus_kv = elements_func.get_bus_changed_kv_vmag(generator_bus, 
-                                        ini_handler.get_data('calculations','node_kv_change_value', 'int') )
-
-    # Setting changed kv value to generator's lower and upper limits 
-    generator.vhi = generator.vlo = changed_kv_vmag
-    psat.set_generator_data(generator)       
-
-    # Searching throgh all generators in model for generators connected to same node
-    neighbouring_generators = [generator]
-    for changed_generator in all_generators:
-
-        # If generator is on the same node and has different id, then add it to neigbours array and change it's limits 
-        if changed_generator.bus == generator.bus and changed_generator.id != generator.id:
-            neighbouring_generators.append(changed_generator)
-
-            # Setting changed kv value to generator's lower and upper limits 
-            changed_generator.vhi = changed_generator.vlo = changed_kv_vmag
-            psat.set_generator_data(changed_generator)
-
-    psat.calculate_powerflow()
-
-    # Check if each generator reached changed_kv_mag and set flag to false if not
-    is_matching_desired_v = True
-    for neighbouring_generator in neighbouring_generators:
-
-        neighbouring_generator_bus = psat.get_bus_data(neighbouring_generator.bus)
-
-        if round( neighbouring_generator_bus.vmag, 4 ) < round( changed_kv_vmag, 4 ):
-            is_matching_desired_v = False
-            break
-
-
-    if is_matching_desired_v == False:
-
-        # Getting new kv change from base value and calculated bus kv
-        changed_kv_vmag, bus_kv = elements_func.get_bus_changed_kv_vmag(generator_bus,
-                        - ini_handler.get_data('calculations','node_kv_change_value', 'int') )
-
-        # Apply new kv changed value to all generators connected to bus
-        for neighbouring_generator in neighbouring_generators:
-
-            # Setting changed kv value to generator's lower and upper limits 
-            neighbouring_generator.vhi = neighbouring_generator.vlo = changed_kv_vmag
-            psat.set_generator_data(neighbouring_generator)
-
-        psat.calculate_powerflow()
-    
-    # Get generator bus with new calculated values
-    generator_bus = psat.get_bus_data(generator_bus.number)
-
-    # Calculate bus new kv and it's kv change from base value 
-    bus_new_kv = float(generator_bus.basekv) * float(generator_bus.vmag)
-    kv_difference = round( bus_new_kv - bus_kv, ini_handler.get_data('results','rounding_precission', 'int') )
+    row = elements_func.set_new_generators_bus_kv_value( bus_number_key, generators_from_bus[bus_number_key], 
+        ini_handler.get_data('calculations','node_kv_change_value', 'int'), 
+        ini_handler.get_data('results','rounding_precission', 'int')   )
 
     # Set generator bus number, generator's eqname and it's bus kv difference to row of the result files
-    v_row = [ generator.bus, "-", generator_bus.name[:-4].strip(), locale.format_string('%G',kv_difference) ]
-    q_row = [ generator.bus, "-", generator_bus.name[:-4].strip(), locale.format_string('%G',kv_difference) ]
-
+    v_row = row
+    q_row = row
+    
     # Getting changed values on each transformers, generators and buses
     changed_transformers = elements_lists.get_transformers(
     ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
-
     changed_generators_from_bus = elements_lists.get_generators_bus( 
         ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem, False)
     buses = psat.get_element_list('bus', subsystem)

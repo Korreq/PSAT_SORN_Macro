@@ -11,7 +11,7 @@ class ElementsLists:
 
         generators_bus = []
         added_buses = []
-
+        added_buses_with_gens_id = {}
         generators = self.psat.get_element_list("generator", subsys)
         
 
@@ -24,14 +24,26 @@ class ElementsLists:
 
                 continue
 
-            # If not already added, add bus and first found connected generator to list   
-            if bus.number not in added_buses or not skip_generators_on_same_bus:
+            if not skip_generators_on_same_bus:
 
-                generators_bus.append( [ bus, generator ] )
-                
-                added_buses.append(bus.number)
+                generators_bus.append( [ bus, generator] )
 
-        return generators_bus
+            else:
+
+                if bus.number not in added_buses_with_gens_id:
+
+                    added_buses_with_gens_id[bus.number] = [generator.id]
+
+                else:
+
+                    gens_id = added_buses_with_gens_id.get( bus.number )
+                    gens_id.append( generator.id )
+
+                    added_buses_with_gens_id[bus.number] = gens_id
+
+    
+        return added_buses_with_gens_id if skip_generators_on_same_bus else generators_bus
+
 
     # Get from every bus in model it's current kv value
     def get_buses_base_kv(self, subsys="mainsub"):

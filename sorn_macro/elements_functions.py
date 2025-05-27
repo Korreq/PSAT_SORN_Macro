@@ -6,6 +6,47 @@ class ElementsFunctions:
     def __init__(self):
         self.psat = PsatFunctions()
         
+        
+    def set_new_generators_bus_kv_value(self, generator_bus_number, generators_id, node_kv_change_value=1, rounding_precission=2):
+
+        generator_bus = self.psat.get_bus_data( generator_bus_number )
+
+        # Getting new kv change from base value and calculated bus kv
+        changed_kv_vmag, bus_kv = self.get_bus_changed_kv_vmag( generator_bus, node_kv_change_value )
+
+        self.set_generators_kv_limits( generator_bus_number, generators_id, changed_kv_vmag )
+
+        self.psat.calculate_powerflow()
+
+        generator_bus = self.psat.get_bus_data( generator_bus_number )
+
+        # Check if generators bus reached changed_kv_mag and set flag to false if not
+        is_matching_desired_v = True
+        if round( generator_bus.vmag, 4 ) < round( changed_kv_vmag, 4 ):
+            
+            is_matching_desired_v = False
+
+
+        if is_matching_desired_v == False:
+
+            # Getting new kv change from base value and calculated bus kv
+            changed_kv_vmag, bus_kv = self.get_bus_changed_kv_vmag( generator_bus, - node_kv_change_value )
+
+            # Apply new kv changed value to all generators connected to bus
+            self.set_generators_kv_limits( generator_bus_number, generators_id, changed_kv_vmag )
+
+            self.psat.calculate_powerflow()
+
+        # Get generator bus with new calculated values
+        generator_bus = self.psat.get_bus_data( generator_bus.number )
+
+        # Calculate bus new kv and it's kv change from base value 
+        kv_difference = round( ( float(generator_bus.basekv) * float(generator_bus.vmag) ) - bus_kv, rounding_precission )
+        generator = self.psat.get_generator_data( generator_bus_number, generators_id[0] )
+
+        # Return generator's bus number, generator's bus name and it's bus kv difference in array form
+        return [ generator.bus, "-", generator_bus.name[:-4].strip(), locale.format_string('%G',kv_difference) ]
+
     # Get transformer's current tap, max tap, change_tap value and if it was a tap change down 
     def get_transformer_taps(self, transformer, transformer_ratio_margin=0.05):
 
@@ -50,6 +91,15 @@ class ElementsFunctions:
 
         return down_change, trf_max_tap, trf_current_tap, trf_changed_tap
     
+    # Find generators by their id number and bus number, set thier kv bus limit and apply changes
+    def set_generators_kv_limits(self, bus_number, generators_id, changed_kv_vmag):
+
+        for generator_id in generators_id:
+
+            generator = self.psat.get_generator_data(bus_number, generator_id)
+            generator.vhi = generator.vlo = changed_kv_vmag
+            self.psat.set_generator_data(generator)    
+
     # Get changed kv value by specified value and it's multiplier from base value 
     def get_bus_changed_kv_vmag(self, bus, value):
 
