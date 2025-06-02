@@ -86,7 +86,7 @@ shunts = elements_lists.get_shunts(
 transformers = elements_lists.get_transformers(
     ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
 
-# Create files for model's elements
+# Create files and write them elements from model
 csv.write_buses_file(buses)
 csv.write_gens_file(all_generators)
 csv.write_shunts_file(shunts)
@@ -103,17 +103,19 @@ first_pass = True
 # Iterate through each node, that has sutaible generator directly connected  
 for bus_number_key in generators_from_bus:
 
-    row = elements_func.set_new_generators_bus_kv_value( bus_number_key, generators_from_bus[bus_number_key], 
+    v_row = []
+    q_row = []
+
+    # Try to change generators bus kv value up or down, recalculate power flow and return row with bus number, bus name, change difference
+    row = elements_func.set_new_generators_bus_kv_value( bus_number_key, generators_from_bus[ bus_number_key ], 
         ini_handler.get_data('calculations','node_kv_change_value', 'int'), 
         ini_handler.get_data('results','rounding_precission', 'int')   )
-
-    # Set generator bus number, generator's eqname and it's bus kv difference to row of the result files
     v_row = row
     q_row = row
     
-    # Getting changed values on each transformers, generators and buses
+    # Getting updated values on each transformers, generators and buses
     changed_transformers = elements_lists.get_transformers(
-    ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
+        ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
     changed_generators_from_bus = elements_lists.get_generators_bus( 
         ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem, False)
     buses = psat.get_element_list('bus', subsystem)
@@ -138,12 +140,15 @@ for bus_number_key in generators_from_bus:
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
 
+"""
+
 # Iterate through each suitable transformer 
 for transformer in transformers:
 
-    v_row = [] 
+    v_row = []
     q_row = []
-    
+
+    '''
     # If able change tap down, if not change tap up 
     down_change = elements_func.get_transformer_taps(transformer, 
                         ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )[0]
@@ -163,14 +168,16 @@ for transformer in transformers:
         changed_transformer, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') 
     ) 
     trf_tap_difference = trf_changed_tap - trf_current_tap
+    '''
 
-    v_row = [ transformer.frbus, transformer.tobus, transformer.name, trf_tap_difference ]
-    q_row = [ transformer.frbus, transformer.tobus, transformer.name, trf_tap_difference ]
+    row = elements_func.set_transformer_new_tap(transformer, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )
+
+    v_row = row
+    q_row = row
 
     # Getting changed values on each transformers, generators and buses
     changed_transformers = elements_lists.get_transformers(
     ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
-
     changed_generators_from_bus = elements_lists.get_generators_bus( 
         ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem, False)
     buses = psat.get_element_list('bus', subsystem)
@@ -210,7 +217,6 @@ for shunt in shunts:
     # Getting changed values on each transformers, generators and buses 
     changed_transformers = elements_lists.get_transformers(
     ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
-
     changed_generators_from_bus = elements_lists.get_generators_bus( 
         ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem, False)
     buses = psat.get_element_list('bus', subsystem)
@@ -229,6 +235,8 @@ for shunt in shunts:
 
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
+
+"""
 
 # Save filled rows and headers to corresponding result files
 csv.write_to_file("v_result", v_header, v_rows)

@@ -1,7 +1,7 @@
 import csv
 
 from elements_functions import ElementsFunctions
-
+from psat_functions import PsatFunctions
 
 class CsvFile:
  
@@ -9,6 +9,8 @@ class CsvFile:
     def __init__(self, path, timestamp='', prefix=''):
 
         self.functions = ElementsFunctions()
+
+        self.psat = PsatFunctions()
 
         self.path = path
 
@@ -85,7 +87,12 @@ class CsvFile:
 
         for trf in transformers:
 
-            max_tap, current_tap = self.functions.get_transformer_taps(trf, margin)[1:3]
+            beg_bus = self.psat.get_bus_data(trf.frbus)
+            end_bus = self.psat.get_bus_data(trf.tobus)
+
+            #max_tap, current_tap = self.functions.get_transformer_taps(trf, margin)[1:3]
+
+            current_tap, max_tap = self.functions.get_transformer_ratios(trf, beg_bus.basekv, end_bus.basekv, margin, True)
 
             rows.append( [ self.functions.get_bus_name_from_id(trf.frbus), self.functions.get_bus_name_from_id(trf.tobus), 
                           trf.name, current_tap, max_tap ] )

@@ -10,7 +10,6 @@ class ElementsLists:
     def get_generators_bus(self, mw_min=0 ,subsys="mainsub", skip_generators_on_same_bus=True):
 
         generators_bus = []
-        added_buses = []
         added_buses_with_gens_id = {}
         generators = self.psat.get_element_list("generator", subsys)
         
@@ -42,7 +41,12 @@ class ElementsLists:
                     added_buses_with_gens_id[bus.number] = gens_id
 
     
-        return added_buses_with_gens_id if skip_generators_on_same_bus else generators_bus
+        if skip_generators_on_same_bus:
+            return added_buses_with_gens_id
+        
+        return generators_bus
+
+        #return added_buses_with_gens_id if skip_generators_on_same_bus else generators_bus
 
 
     # Get from every bus in model it's current kv value
