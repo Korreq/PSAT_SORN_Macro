@@ -3,16 +3,11 @@ from time_manager import TimeManager
 
 class FileHandler:
 
-    def __init__(self):
-        pass
-
     # Deletes all files with specifed text in it within directory
     def delete_files_from_directory(self, directory, string):
 
         for file_name in os.listdir(directory):
-
             if string in file_name:
-
                 os.remove(directory + "/" + file_name)
 
     # Creates directory in specifed path, with selected name, and if true with timestamp
@@ -40,21 +35,5 @@ class FileHandler:
     def create_info_file(self, file_path, text):
 
         with open(f"{file_path}/info.txt", "w") as file:
-
             file.write(text)
-
-
-    #Left for possible implementation
-    def get_data_from_file(self, file_path):
-
-        data = []
-
-        with open(file_path, "r") as file:
-
-            lines = file.readlines()
-
-            for line in lines:
-
-                pass
-
    

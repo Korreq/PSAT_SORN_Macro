@@ -90,8 +90,6 @@ class CsvFile:
             beg_bus = self.psat.get_bus_data(trf.frbus)
             end_bus = self.psat.get_bus_data(trf.tobus)
 
-            #max_tap, current_tap = self.functions.get_transformer_taps(trf, margin)[1:3]
-
             current_tap, max_tap = self.functions.get_transformer_ratios(trf, beg_bus.basekv, end_bus.basekv, margin, True)
 
             rows.append( [ self.functions.get_bus_name_from_id(trf.frbus), self.functions.get_bus_name_from_id(trf.tobus), 

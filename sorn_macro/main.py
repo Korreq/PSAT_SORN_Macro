@@ -1,7 +1,7 @@
 """
     To start this macro start it by running run.py in terminal from sorn_macro directory:
 
-        python run.py
+        python sorn_macro/run.py
         
 """
 
@@ -22,11 +22,12 @@ from time_manager import TimeManager
 '''
 TODO:
 
-    *Optimize changing transformers tap
-    *Result files for all elements in model
-    *Add missing data to info file
-    *Add missing comments
-    *Create input file where you can decide which nodes and elements to use ( Stashed for now, looking into using database for it )
+    *Logging system that saves raports into json or database?
+    *Optimize changing transformers tap ~
+    *Result files for all elements in model ~
+    *Add missing data to info file ~
+    *Add missing comments ~
+    *Create input file where you can decide which nodes and elements to use
 '''
 
 #Set locale based on system's locale
@@ -73,10 +74,10 @@ psat.save_as_tmp_model(model_path + '/' + tmp_model)
 # Get arrays with all generators 
 # and 400,220,110 buses in loaded model
 all_generators = psat.get_element_list('generator', subsystem)
-buses = psat.get_element_list('bus', subsystem)
+filtred_buses = psat.get_element_list('bus', subsystem)
 # Get arrays with base values for buses, transformers, buses with connected suitable generators
 buses_base_kv = elements_lists.get_buses_base_kv(subsystem)
-generators_from_bus_base_mvar = elements_lists.get_generators_from_bus_base_mvar(
+generators_base_mvar = elements_lists.get_generators_base_mvar(
     ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
 # Get arrays with buses that have suitable generator connected, filtred shunts and filtred transformers
 generators_from_bus = elements_lists.get_generators_bus( 
@@ -87,10 +88,10 @@ transformers = elements_lists.get_transformers(
     ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
 
 # Create files and write them elements from model
-csv.write_buses_file(buses)
-csv.write_gens_file(all_generators)
-csv.write_shunts_file(shunts)
-csv.wrtie_trfs_file(transformers, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )
+csv.write_buses_file( filtred_buses )
+csv.write_gens_file( all_generators )
+csv.write_shunts_file( shunts )
+csv.wrtie_trfs_file( transformers, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )
 
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference/State']
 q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference/State']
@@ -103,31 +104,28 @@ first_pass = True
 # Iterate through each node, that has sutaible generator directly connected  
 for bus_number_key in generators_from_bus:
 
-    v_row = []
-    q_row = []
-
     # Try to change generators bus kv value up or down, recalculate power flow and return row with bus number, bus name, change difference
     row = elements_func.set_new_generators_bus_kv_value( bus_number_key, generators_from_bus[ bus_number_key ], 
         ini_handler.get_data('calculations','node_kv_change_value', 'int'), 
         ini_handler.get_data('results','rounding_precission', 'int')   )
-    v_row = row
-    q_row = row
+    v_row = row.copy()
+    q_row = row.copy()
     
     # Getting updated values on each transformers, generators and buses
     changed_transformers = elements_lists.get_transformers(
         ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
-    changed_generators_from_bus = elements_lists.get_generators_bus( 
-        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem, False)
-    buses = psat.get_element_list('bus', subsystem)
+    changed_generators = elements_lists.get_filtred_generators( 
+        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
+    filtred_buses = elements_lists.get_filtred_buses(subsystem)
 
     # Get row and header filled with generators changes for q_result file 
-    tmp_row, tmp_header = elements_func.get_changed_generator_buses_results(changed_generators_from_bus, generators_from_bus_base_mvar, first_pass)
+    tmp_row, tmp_header = elements_func.get_generators_mvar_differrence_results(changed_generators, generators_base_mvar, first_pass)
     q_row.extend( tmp_row )
     if tmp_header:
         q_header.extend( tmp_header )
 
     # Get row and header filled with buses changes for v_result file
-    tmp_row, tmp_header = elements_func.get_changed_buses_results(buses, buses_base_kv, first_pass)
+    tmp_row, tmp_header = elements_func.get_changed_buses_results(filtred_buses, buses_base_kv, first_pass)
     v_row.extend( tmp_row )
     if tmp_header:
         v_header.extend( tmp_header )
@@ -140,54 +138,27 @@ for bus_number_key in generators_from_bus:
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
 
-"""
-
 # Iterate through each suitable transformer 
 for transformer in transformers:
 
-    v_row = []
-    q_row = []
-
-    '''
-    # If able change tap down, if not change tap up 
-    down_change = elements_func.get_transformer_taps(transformer, 
-                        ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )[0]
-    
-    if(down_change):
-        transformer.fsratio += transformer.stepratio
-    else:
-        transformer.fsratio -= transformer.stepratio
-
-    # Set changed ratio corresponding for tap change 
-    psat.set_transformer_data(transformer)
-    psat.calculate_powerflow()
-
-    # Get updated transformer's data
-    changed_transformer = psat.get_transformer_data(transformer.frbus, transformer.tobus, transformer.id, transformer.sec)
-    down_change, trf_max_tap, trf_current_tap, trf_changed_tap = elements_func.get_transformer_taps(
-        changed_transformer, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') 
-    ) 
-    trf_tap_difference = trf_changed_tap - trf_current_tap
-    '''
-
     row = elements_func.set_transformer_new_tap(transformer, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )
 
-    v_row = row
-    q_row = row
+    v_row = row.copy()
+    q_row = row.copy()
 
     # Getting changed values on each transformers, generators and buses
     changed_transformers = elements_lists.get_transformers(
-    ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
-    changed_generators_from_bus = elements_lists.get_generators_bus( 
-        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem, False)
-    buses = psat.get_element_list('bus', subsystem)
+        ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
+    changed_generators = elements_lists.get_filtred_generators( 
+        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
+    filtred_buses = elements_lists.get_filtred_buses(subsystem)
 
     # Get row filled with generators changes for q_result file 
-    tmp_row = elements_func.get_changed_generator_buses_results(changed_generators_from_bus, generators_from_bus_base_mvar, 0)[0]
+    tmp_row = elements_func.get_generators_mvar_differrence_results(changed_generators, generators_base_mvar, 0)[0]
     q_row.extend( tmp_row )
 
     # Get row filled with buses changes for v_result file
-    tmp_row = elements_func.get_changed_buses_results(buses, buses_base_kv, 0)[0]
+    tmp_row = elements_func.get_changed_buses_results(filtred_buses, buses_base_kv, 0)[0]
     v_row.extend( tmp_row )
    
     # Add transformer's changed row to v_rows and q_rows  
@@ -216,17 +187,17 @@ for shunt in shunts:
 
     # Getting changed values on each transformers, generators and buses 
     changed_transformers = elements_lists.get_transformers(
-    ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
-    changed_generators_from_bus = elements_lists.get_generators_bus( 
-        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem, False)
-    buses = psat.get_element_list('bus', subsystem)
+        ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean'), subsystem)
+    changed_generators = elements_lists.get_filtred_generators( 
+        ini_handler.get_data('calculations','minimum_max_mw_generators','int'), subsystem)
+    filtred_buses = elements_lists.get_filtred_buses(subsystem)
 
     # Get row filled with generators changes for q_result file 
-    tmp_row = elements_func.get_changed_generator_buses_results(changed_generators_from_bus, generators_from_bus_base_mvar, 0)[0]
+    tmp_row = elements_func.get_generators_mvar_differrence_results(changed_generators, generators_base_mvar, 0)[0]
     q_row.extend( tmp_row )
     
     # Get row filled with buses changes for v_result file
-    tmp_row = elements_func.get_changed_buses_results(buses, buses_base_kv, 0)[0]
+    tmp_row = elements_func.get_changed_buses_results(filtred_buses, buses_base_kv, 0)[0]
     v_row.extend( tmp_row )
    
     # Add transformer's changed row to v_rows and q_rows  
@@ -235,8 +206,6 @@ for shunt in shunts:
 
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
-
-"""
 
 # Save filled rows and headers to corresponding result files
 csv.write_to_file("v_result", v_header, v_rows)

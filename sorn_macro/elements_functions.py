@@ -15,7 +15,6 @@ class ElementsFunctions:
         changed_kv_vmag, bus_kv = self.get_bus_changed_kv_vmag( generator_bus, node_kv_change_value )
 
         self.set_generators_kv_limits( generator_bus_number, generators_id, changed_kv_vmag )
-
         self.psat.calculate_powerflow()
 
         generator_bus = self.psat.get_bus_data( generator_bus_number )
@@ -28,7 +27,6 @@ class ElementsFunctions:
 
             # Apply new kv changed value to all generators connected to bus
             self.set_generators_kv_limits( generator_bus_number, generators_id, changed_kv_vmag )
-
             self.psat.calculate_powerflow()
 
         # Get generator bus with new calculated values
@@ -65,7 +63,7 @@ class ElementsFunctions:
         trf_updated_current_tap = self.get_transformer_ratios(updated_transformer, beg_bus.basekv, 
                                                               end_bus.basekv, transformer_ratio_margin)[0]
 
-        return [ transformer.frbus, transformer.tobus, transformer.name, trf_current_tap - trf_updated_current_tap ]
+        return [ transformer.frbus, transformer.tobus, transformer.name, trf_updated_current_tap - trf_current_tap ]
 
 
     def get_transformer_ratios( self, transformer, beg_bus_base_kv, end_bus_base_kv, transformer_ratio_margin, get_data_for_elements_file=False ):
@@ -80,16 +78,11 @@ class ElementsFunctions:
         trf_step = ( transformer.stepratio * beg_bus_base_kv ) / trf_to_side 
 
         trf_max_tap = trf_current_reversed_tap = 0
-
         trf_pass = trf_min
-
         while trf_pass < trf_max:
-
             if( 
-                round(trf_pass, 4) > round( 
-                    trf_current - (transformer_ratio_margin * trf_current), 4 ) and
-                round(trf_pass, 4) < round( 
-                    trf_current + (transformer_ratio_margin * trf_current), 4 )  
+                round(trf_pass, 4) > round( trf_current - (transformer_ratio_margin * trf_current), 4 ) and
+                round(trf_pass, 4) < round( trf_current + (transformer_ratio_margin * trf_current), 4 )  
             ):
                 trf_current_reversed_tap = trf_max_tap
                 
@@ -103,55 +96,10 @@ class ElementsFunctions:
         
         return trf_current_tap, trf_current, trf_max, trf_step
 
-    # Get transformer's current tap, max tap, change_tap value and if it was a tap change down 
-    def get_transformer_taps(self, transformer, transformer_ratio_margin=0.05):
-
-        down_change = True
-
-        beg_bus = self.psat.get_bus_data(transformer.frbus)
-        end_bus = self.psat.get_bus_data(transformer.tobus)
-
-        trf_from_side = transformer.fsratio * beg_bus.basekv
-        trf_to_side = transformer.tsratio * end_bus.basekv
-
-        trf_current_ratio =  round( trf_from_side / trf_to_side, 4)
-
-        trf_max =  ( transformer.maxratio * beg_bus.basekv ) / trf_to_side
-        trf_min =  ( transformer.minratio * beg_bus.basekv ) / trf_to_side
-        trf_step =  ( transformer.stepratio * beg_bus.basekv ) / trf_to_side 
-
-        trf_max_tap = trf_current_tap = trf_changed_tap = 0
-        trf_pass = trf_min
-
-        while trf_pass < trf_max:
-
-            if( 
-                round(trf_pass, 4) > round( 
-                    trf_current_ratio - (transformer_ratio_margin * trf_current_ratio), 4 ) and
-                round(trf_pass, 4) < round( 
-                    trf_current_ratio + (transformer_ratio_margin * trf_current_ratio), 4 )  
-            ):
-                trf_current_tap = trf_max_tap
-
-                if(trf_pass + trf_step <= trf_max):
-                    trf_changed_tap = trf_max_tap - 1
-                else:
-                    trf_changed_tap = trf_max_tap + 1
-                    down_change = False
-
-            trf_max_tap += 1
-            trf_pass += trf_step
-
-        trf_current_tap = trf_max_tap - trf_current_tap
-        trf_changed_tap = trf_max_tap - trf_changed_tap
-
-        return down_change, trf_max_tap, trf_current_tap, trf_changed_tap
-    
     # Find generators by their id number and bus number, set thier kv bus limit and apply changes
     def set_generators_kv_limits(self, bus_number, generators_id, changed_kv_vmag):
 
         for generator_id in generators_id:
-
             generator = self.psat.get_generator_data(bus_number, generator_id)
             generator.vhi = generator.vlo = changed_kv_vmag
             self.psat.set_generator_data(generator)    
@@ -171,8 +119,8 @@ class ElementsFunctions:
         types = ["Load","Generator","Swing","Out of service"]
 
         if bus.type > 0 and bus.type < 5:
-
             name = types[ bus.type - 1 ]
+
         else:
             name = "Unknown"
 
@@ -180,14 +128,12 @@ class ElementsFunctions:
 
     # Get formated bus name from bus id
     def get_bus_name_from_id(self, id):
-
         bus = self.psat.get_bus_data(id)
-
         return bus.name[:-4].strip()
 
     # For each updated generator bus get differrence from base mvar and append it to q_row list. 
     # If first pass, then add bus name to q_header list 
-    def get_changed_generator_buses_results(self, changed_generators, base_generators_mvar, first_pass):
+    def get_generators_mvar_differrence_results(self, changed_generators, base_generators_mvar, first_pass):
 
         q_header = []
         q_row = []
@@ -195,9 +141,9 @@ class ElementsFunctions:
         for i in range( len( changed_generators ) ):
 
             if first_pass:
-                q_header.append( changed_generators[i][1].eqname )
+                q_header.append( changed_generators[i].eqname )
         
-            bus_q_change = locale.format_string('%G', float( changed_generators[i][1].mvar ) 
+            bus_q_change = locale.format_string('%G', float( changed_generators[i].mvar ) 
                                                       - float( base_generators_mvar[i] ), grouping=True )
 
             q_row.append( bus_q_change )
@@ -217,7 +163,6 @@ class ElementsFunctions:
                 v_header.append( changed_buses[i].name[:-4].strip() )
 
             bus_kv = float(changed_buses[i].basekv) * float(changed_buses[i].vmag)
-    
             bus_kv_change = locale.format_string('%G', bus_kv - base_buses_kv[i], grouping=True)
 
             v_row.append( bus_kv_change )
