@@ -1,9 +1,15 @@
 from psat_functions import PsatFunctions
+from json_handler import JsonHandler
+
 
 class ElementsLists:
 
-    def __init__(self):
+    def __init__(self, input_file="", use_input_file=False):
         self.psat = PsatFunctions()
+
+        self.use_input_file = use_input_file
+        if self.use_input_file:
+            self.json = JsonHandler(input_file)
         
     # Get buses that have directly connected generators. Can filter buses based on maximum MW generated on generator, 
     # bus will be added if there's at least one generator fitting requirements

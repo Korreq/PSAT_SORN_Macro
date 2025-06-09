@@ -27,7 +27,8 @@ TODO:
     *Result files for all elements in model ~
     *Add missing data to info file ~
     *Add missing comments ~
-    *Create input file where you can decide which nodes and elements to use
+    *Create input file where you can decide which nodes and elements to use ( add filtering in elements_lists class )
+    *Remade getting elements from the model ( Get every element connected to selected buses )
 '''
 
 #Set locale based on system's locale
@@ -42,7 +43,8 @@ config = ini_handler.get_config_file()
 sys.path.append( config['psat']['psat_installation_path'] + "/python" )
 
 psat = PsatFunctions()
-elements_lists = ElementsLists()
+elements_lists = ElementsLists(config['input']['input_file_path'], 
+                               ini_handler.get_data('calculations', 'use_input_file', 'boolean'))
 elements_func = ElementsFunctions()
 f_handler = FileHandler()
 time_mgr = TimeManager()
@@ -90,6 +92,8 @@ transformers = elements_lists.get_transformers(
 # Create files and write them elements from model
 csv.write_buses_file( filtred_buses )
 csv.write_gens_file( all_generators )
+
+# Change to saving all shunts in model
 csv.write_shunts_file( shunts )
 csv.wrtie_trfs_file( transformers, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )
 
