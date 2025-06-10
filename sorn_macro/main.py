@@ -42,9 +42,15 @@ config = ini_handler.get_config_file()
 #Add psat isntall loacation to enviromental variables
 sys.path.append( config['psat']['psat_installation_path'] + "/python" )
 
+input_settings = [
+    ini_handler.get_data('input', 'use_input_for_buses', 'boolean'),
+    ini_handler.get_data('input', 'use_input_for_transformers', 'boolean'),
+    ini_handler.get_data('input', 'use_input_for_generators', 'boolean'),
+    ini_handler.get_data('input', 'use_input_for_shunts', 'boolean')
+]
+
 psat = PsatFunctions()
-elements_lists = ElementsLists(config['input']['input_file_path'], 
-                               ini_handler.get_data('calculations', 'use_input_file', 'boolean'))
+elements_lists = ElementsLists(config['input']['input_file_path'], input_settings)
 elements_func = ElementsFunctions()
 f_handler = FileHandler()
 time_mgr = TimeManager()
