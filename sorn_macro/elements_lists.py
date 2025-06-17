@@ -18,6 +18,12 @@ class ElementsLists:
             self.json = JsonHandler(input_file)
             self.input_settings = input_settings
         
+            self.found_elements = {
+                "buses": [],
+                "transformers": [],                
+                "generators": [],              
+                "shunts": []                          
+            }
    
     def get_buses(self, subsys):
 
@@ -29,9 +35,14 @@ class ElementsLists:
 
         for bus in buses:
 
+            bus_name = bus.name[:-4].strip()
+
             if buses_filter_list:
-                if bus.name[:-4].strip() in buses_filter_list:
+                if bus_name in buses_filter_list:
                     filtred_buses.append(bus)
+
+                    if bus_name not in self.found_elements["buses"]:
+                        self.found_elements["buses"].append(bus_name)
 
             elif bus.basekv in [110,220,400]:
                 filtred_buses.append(bus)
@@ -55,9 +66,12 @@ class ElementsLists:
                 if transformer.name in transformers_filter_list:
                     filtered_transformers.append(transformer)
 
+                    if transformer.name not in self.found_elements["transformers"]:
+                        self.found_elements["transformers"].append(transformer.name)
             else:
-                if (( from_bus.basekv != 400 or to_bus.basekv != 400 ) and 
-                    ( from_bus.basekv not in [110,220] or to_bus.basekv not in [110,220] )):
+                # if transformers are not 220 - 110, 400 - 220 , 400 - 110 then continue
+                if (( from_bus.basekv == to_bus.basekv ) or 
+                    ( from_bus.basekv or to_bus.basekv not in [110,220,400] )):
                     continue
 
                 for bus in self.filtered_buses:
@@ -81,6 +95,9 @@ class ElementsLists:
             if shunts_filter_list:
                 if shunt.name in shunts_filter_list:
                     filtered_shunts.append(shunt)
+
+                    if shunt.name not in self.found_elements["shunts"]:
+                        self.found_elements["shunts"].append(shunt.name)
 
             else:
                 shunt_bus = self.psat.get_bus_data(shunt.bus)
@@ -110,6 +127,8 @@ class ElementsLists:
                 if generator.name in generators_filter_list:
                     filtred_generators.append(generator)
 
+                    if generator.name not in self.found_elements["generators"]:
+                        self.found_elements["generators"].append(generator.name)
             else:
                 generator_bus = self.psat.get_bus_data(generator.bus)
 
@@ -180,3 +199,7 @@ class ElementsLists:
 
         return self.filtered_generators
     
+
+    def get_found_elements_dict(self):
+
+        return self.found_elements

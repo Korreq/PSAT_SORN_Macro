@@ -212,7 +212,15 @@ duration = time_mgr.elapsed_time()
 psat.print(f"Elapsed time: {duration}")
 
 # Create info file of results
-info_text = f"""Model: {model}\nSubsystem: {subsystem}\nDate: {start_timestamp}\nDuration: {duration}\n
+info_text = f"""Model: {model}
+Subsystem: {subsystem}
+Date: {start_timestamp}
+Duration: {duration}\n
+Using input file for: 
+buses: {input_settings[0]}
+transformers: {input_settings[1]}
+generators: {input_settings[2]}
+shunts: {input_settings[3]}\n
 Minimum upper generated MW limit for generators: {ini_handler.get_data('calculations','minimum_max_mw_generators','int')}
 Node KV +/- change: {ini_handler.get_data('calculations','node_kv_change_value', 'int')}
 Transformer ratio precission error margin: {ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float')}
