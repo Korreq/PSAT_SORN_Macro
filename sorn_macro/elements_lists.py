@@ -1,6 +1,13 @@
 from psat_functions import PsatFunctions
 from json_handler import JsonHandler
 
+
+"""
+
+    Create a list for all filtered elements in model, change updates to update using correct list
+
+"""
+
 class ElementsLists:
 
     def __init__(self, input_settings, input_file=""):

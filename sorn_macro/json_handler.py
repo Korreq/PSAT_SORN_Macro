@@ -4,6 +4,13 @@ class JsonHandler:
 
     def __init__(self, input_file):
         
+        self.input_elements = {
+            "buses": [],
+            "transformers": [],                
+            "generators": [],              
+            "shunts": []             
+        }
+
         with open(f'{input_file}', 'r') as file:
             self.data = json.load(file)            
 
@@ -17,6 +24,7 @@ class JsonHandler:
             transformers_names.append(transformer_name)
 
         transformers_names.sort()
+        self.input_elements["transformers"] = transformers_names
         return transformers_names
     
 
@@ -29,6 +37,7 @@ class JsonHandler:
             buses_names.append(bus_name)
 
         buses_names.sort()
+        self.input_elements["buses"] = buses_names
         return buses_names
     
 
@@ -41,6 +50,7 @@ class JsonHandler:
             generators_names.append(generator_name)
 
         generators_names.sort()
+        self.input_elements["generators"] = generators_names
         return generators_names
     
 
@@ -53,4 +63,9 @@ class JsonHandler:
             shunts_names.append(shunt_name)
 
         shunts_names.sort()
+        self.input_elements["shunts"] = shunts_names
         return shunts_names
+    
+
+    def get_input_dict(self):
+        return self.input_elements
