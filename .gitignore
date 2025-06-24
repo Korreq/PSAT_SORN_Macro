@@ -170,6 +170,6 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# Ignore all files/directories with "result" in name and if it's a json file (using json file as an model's filter)
-*.json
+# Ignore all files/directories with "result" in name and if it's a input.json file (using json file as an model's filter)
+input.json
 *result*

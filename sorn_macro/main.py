@@ -18,11 +18,12 @@ from csv_handler import CsvFile
 from file_handler import FileHandler
 from ini_handler import IniHandler
 from time_manager import TimeManager
+from raport_handler import RaportHandler
 
 '''
 TODO:
 
-    *Logging system that saves raports
+    *Logging system that saves raports ~
     *Optimize changing transformers tap ~
     *Result files for all elements in model ~
     *Add missing data to info file ~
@@ -96,6 +97,12 @@ csv.write_buses_file( filtered_buses )
 csv.write_gens_file( filtered_generators )
 csv.write_shunts_file( filtered_shunts )
 csv.wrtie_trfs_file( filtered_transformers, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )
+
+if True in input_settings:
+    raport = RaportHandler(elements_lists.get_found_elements_dict(), 
+                           elements_lists.get_input_elements_dict(), elements_lists.get_model_elements_dict()).get_raport_data()
+
+    f_handler.create_info_file(f"{save_path}/raport.txt", raport)
 
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference/State']
 q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference/State']
@@ -227,4 +234,4 @@ Transformer ratio precission error margin: {ini_handler.get_data('calculations',
 Shunt minimum absolute mvar value: {ini_handler.get_data('calculations', 'shunt_minimal_abs_mvar_value', 'int')}
 Keep transformers not connected to 400 bus: {ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean')}\n
 """
-f_handler.create_info_file(save_path, info_text)
+f_handler.create_info_file(f"{save_path}/info.txt" , info_text)

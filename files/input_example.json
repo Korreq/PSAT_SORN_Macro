@@ -1,0 +1,15 @@
+{
+    "buses":[
+        {"name": "busName"}
+    ],
+    "transformers":[
+        {"name": "transformerName"}
+    ],
+    "generators":[
+        {"name": "generatorName"}
+    ],
+    "shunts":[
+        {"name": "shuntName"}
+    ]
+
+}
