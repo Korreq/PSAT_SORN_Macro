@@ -104,8 +104,8 @@ if True in input_settings:
 
     f_handler.create_info_file(f"{save_path}/raport.txt", raport)
 
-v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference/State']
-q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference/State']
+v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
+q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
 v_rows = [] 
 q_rows = []
 tmp_row = []
@@ -178,6 +178,7 @@ for shunt in filtered_shunts:
     q_row = []
 
     # Set fliped shunt status 
+    old_shunt_status = shunt.status
     shunt.status = int( not shunt.status )
     psat.set_fixed_shunt_data(shunt)
     psat.calculate_powerflow()
@@ -185,8 +186,8 @@ for shunt in filtered_shunts:
     # Get updated shunt
     shunt = psat.get_fixed_shunt_data(shunt.bus, shunt.id)
 
-    v_row = [ shunt.bus, "-", shunt.eqname, shunt.status ]
-    q_row = [ shunt.bus, "-", shunt.eqname, shunt.status ]
+    v_row = [ shunt.bus, "-", shunt.eqname, shunt.status - old_shunt_status ]
+    q_row = [ shunt.bus, "-", shunt.eqname, shunt.status - old_shunt_status ]
 
     updated_generators = elements_lists.update_filtered_generators()
     updated_buses = elements_lists.update_filtered_buses()
@@ -207,8 +208,8 @@ for shunt in filtered_shunts:
     psat.load_model(model_path + '/' + tmp_model)
 
 # Save filled rows and headers to corresponding result files
-csv.write_to_file("v_result", v_header, v_rows)
-csv.write_to_file("q_result", q_header, q_rows)
+csv.write_to_file("v_sensitivity", v_header, v_rows)
+csv.write_to_file("q_sensitivity", q_header, q_rows)
 
 # Close model and delete all temporary model files
 psat.close_model()

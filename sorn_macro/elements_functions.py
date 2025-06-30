@@ -107,9 +107,9 @@ class ElementsFunctions:
     # Get changed kv value by specified value and it's multiplier from base value 
     def get_bus_changed_kv_vmag(self, bus, value):
 
-        bus_kv = float(bus.basekv) * float(bus.vmag)
+        bus_kv = bus.basekv * bus.vmag
         bus_new_kv = bus_kv + value
-        changed_kv_vmag = bus_new_kv / float(bus.basekv)
+        changed_kv_vmag = bus_new_kv / bus.basekv
         
         return changed_kv_vmag, bus_kv
     
@@ -144,7 +144,7 @@ class ElementsFunctions:
                 q_header.append( changed_generators[i].eqname )
         
             bus_q_change = locale.format_string('%G', float( changed_generators[i].mvar ) 
-                                                      - float( base_generators_mvar[i] ), grouping=True )
+                                                      - float( base_generators_mvar[i] ))
 
             q_row.append( bus_q_change )
 
@@ -162,8 +162,8 @@ class ElementsFunctions:
             if first_pass:
                 v_header.append( changed_buses[i].name[:-4].strip() )
 
-            bus_kv = float(changed_buses[i].basekv) * float(changed_buses[i].vmag)
-            bus_kv_change = locale.format_string('%G', bus_kv - base_buses_kv[i], grouping=True)
+            bus_kv = changed_buses[i].basekv * changed_buses[i].vmag
+            bus_kv_change = locale.format_string('%G', bus_kv - base_buses_kv[i])
 
             v_row.append( bus_kv_change )
 

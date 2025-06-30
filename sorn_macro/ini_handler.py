@@ -6,8 +6,6 @@ from configparser import ConfigParser
     if elements are on
     if generators mvar min is not same as max
     if transformer is changeable
-    #remove node notation from name
-    #rounding precission for calculation
     create results files
     
 '''
