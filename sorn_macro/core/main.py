@@ -11,14 +11,15 @@ import sys
 
 sys.path.append(os.environ["SORN_WORKING_DIRECTORY"] + '/sorn_macro')
 
-from psat_functions import PsatFunctions
-from elements_lists import ElementsLists
-from elements_functions import ElementsFunctions
-from csv_handler import CsvFile
-from file_handler import FileHandler
-from ini_handler import IniHandler
-from time_manager import TimeManager
-from raport_handler import RaportHandler
+from core.psat_functions import PsatFunctions
+from elements.filters import ElementsLists
+from elements.functions import ElementsFunctions
+from elements.raport import RaportHandler
+from handlers.csv_handler import CsvFile
+from handlers.file_handler import FileHandler
+from handlers.ini_handler import IniHandler
+from utilities.time_manager import TimeManager
+
 
 '''
 TODO:

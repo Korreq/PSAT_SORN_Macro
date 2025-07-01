@@ -1,5 +1,5 @@
 import os
-from time_manager import TimeManager
+from utilities.time_manager import TimeManager
 
 class FileHandler:
 

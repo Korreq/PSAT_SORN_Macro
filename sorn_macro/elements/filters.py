@@ -1,5 +1,5 @@
-from psat_functions import PsatFunctions
-from json_handler import JsonHandler
+from core.psat_functions import PsatFunctions
+from handlers.json_handler import JsonHandler
 
 
 class ElementsLists:

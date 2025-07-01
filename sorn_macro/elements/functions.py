@@ -1,4 +1,4 @@
-from psat_functions import PsatFunctions
+from core.psat_functions import PsatFunctions
 import locale
 
 class ElementsFunctions:

@@ -1,7 +1,7 @@
 import csv
 
-from elements_functions import ElementsFunctions
-from psat_functions import PsatFunctions
+from elements.functions import ElementsFunctions
+from core.psat_functions import PsatFunctions
 
 class CsvFile:
  
