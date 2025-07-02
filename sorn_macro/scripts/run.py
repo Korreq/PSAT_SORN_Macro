@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     from sorn_macro.handlers.ini_handler import IniHandler
 
-    ini_handler = IniHandler(os.path.join(base_dir, 'files', 'config.ini'))
+    ini_handler = IniHandler(os.path.join(base_dir, 'configuration', 'config.ini'))
     config = ini_handler.get_config_file()
 
     os.environ["SORN_WORKING_DIRECTORY"] = base_dir

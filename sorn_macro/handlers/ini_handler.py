@@ -1,15 +1,5 @@
 from configparser import ConfigParser
 
-''' Variables that need to be in .ini file
-
-    if bus is connected
-    if elements are on
-    if generators mvar min is not same as max
-    if transformer is changeable
-    create results files
-    
-'''
-
 class IniHandler:
 
     # Read config file on instance creation

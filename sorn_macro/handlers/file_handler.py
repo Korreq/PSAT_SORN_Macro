@@ -1,39 +1,54 @@
-import os
+from pathlib import Path 
 from utilities.time_manager import TimeManager
 
 class FileHandler:
+    """Utility class for file operations like deleting files, directory and file creation."""
 
-    # Deletes all files with specifed text in it within directory
-    def delete_files_from_directory(self, directory, string):
+    @staticmethod
+    def delete_files_from_directory(directory: str | Path, substring: str) -> None:
+        """
+        Delete files containing `substring` in their name, silently skipping errors.
+        """
+        dir_path = Path(directory)
+        for file in dir_path.glob(f"*{substring}*"):
+            try:
+                file.unlink()
+            except Exception:
+                # skip if file can't be deleted
+                pass
 
-        for file_name in os.listdir(directory):
-            if string in file_name:
-                os.remove(directory + "/" + file_name)
+    @staticmethod
+    def create_directory(base_path: str | Path, name: str = "", 
+                         add_timestamp: bool = False) -> Path:
+        """
+        Create a directory at base_path/name. Skip silently if creation fails.
+        """
+        base = Path(base_path)
+        if not name:
+            return base
 
-    # Creates directory in specifed path, with selected name, and if true with timestamp
-    def create_directory(self, path, string, add_timestamp):
-
-        if not string:
-            return path
-
-        timestamp = TimeManager().get_current_utc_time()
-
-        # Asign directory_path with specifed path, string and if selected timestamp
         if add_timestamp:
-            directory_path = f'{path}/{timestamp}_{string}'
-
+            dir_name = f"{TimeManager.get_current_utc_time()}_{name}"
         else:
-            directory_path = path + '/' + string
+            dir_name = name
 
-        # Create directory if it dosen't exists
-        if not os.path.exists(directory_path):
-            os.makedirs(directory_path)
-
-        return directory_path
+        target = base / dir_name
+        try:
+            target.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            # return base path on failure
+            return base
+        
+        return target
     
-    # Creates info.txt file in specifed path and fills it with text
-    def create_info_file(self, file_path, text):
-
-        with open(f"{file_path}", "w") as file:
-            file.write(text)
-   
+    @staticmethod
+    def create_info_file(file_path: str | Path, text: str) -> None:
+        """
+        Write text to file_path and skip on error.
+        """
+        path = Path(file_path)
+        try:
+            path.write_text(text)
+        except Exception:
+            # skip on failure
+            pass

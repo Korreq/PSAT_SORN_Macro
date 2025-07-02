@@ -186,7 +186,7 @@ class ElementsLists:
 
         buses_kv = []
         for bus in self.filtered_buses:
-            bus_kv = round( float(bus.basekv) * float(bus.vmag), 2 )
+            bus_kv = bus.basekv * bus.vmag
             buses_kv.append( bus_kv )
 
         return buses_kv

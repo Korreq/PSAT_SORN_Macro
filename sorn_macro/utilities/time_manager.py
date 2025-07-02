@@ -1,25 +1,35 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import time
 
 class TimeManager:
+    """
+    Utility for generating UTC timestamps and measuring elapsed time.
+    """
 
-    # Create timer, when creating class instance
-    def __init__(self):
-        self.timer = time.time()
+    def __init__(self) -> None:
+        # Use a monotonic clock to avoid issues if system time changes
+        self._start = time.perf_counter()
 
-    # Get current utc time, formated like this: 2025-01-01--01-00-00
-    def get_current_utc_time(self):
-        return datetime.now(timezone.utc).strftime('%Y-%m-%d--%H-%M-%S')
+    @staticmethod
+    def get_current_utc_time(fmt: str = "%Y-%m-%d--%H-%M-%S") -> str:
+        """
+        Return the current UTC time as a formatted string. 
+        Default time format is: 2025-01-01--01-00-00 .
+        """
+        return datetime.now(timezone.utc).strftime(fmt)
 
     # Calculate the diffrence bettween timer's start and current timer and return it in readable format 
-    def elapsed_time(self):
-        
-        time_difference = round( time.time() - self.timer )
-        hours = minutes = 0
+    def elapsed_time(self) -> str:
+        """
+        Compute time elapsed since instantiation.
 
-        hours = time_difference // 3600
-        time_difference -= hours * 3600
-        minutes = time_difference // 60
-        time_difference -= minutes * 60
+        Returns:
+            A zero-padded "HH:MM:SS" string.
+        """
+        elapsed = time.perf_counter() - self._start
+        delta = timedelta(seconds=round(elapsed))
+
+        hours, remainder = divmod(delta.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
         
-        return f"{str(hours).zfill(2)}:{str(minutes).zfill(2)}:{str(time_difference).zfill(2)}"
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"

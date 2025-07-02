@@ -7,8 +7,7 @@ class ElementsFunctions:
         self.psat = PsatFunctions()
         
         
-    def set_new_generators_bus_kv_value( self, generator_bus_number, generators_id, node_kv_change_value=1, rounding_precission=2 ):
-
+    def set_new_generators_bus_kv_value( self, generator_bus_number, generators_id, node_kv_change_value=1 ):
         generator_bus = self.psat.get_bus_data( generator_bus_number )
 
         # Getting new kv change from base value and calculated bus kv
@@ -33,7 +32,7 @@ class ElementsFunctions:
         generator_bus = self.psat.get_bus_data( generator_bus.number )
 
         # Calculate bus new kv and it's kv change from base value 
-        kv_difference = round( ( float(generator_bus.basekv) * float(generator_bus.vmag) ) - bus_kv, rounding_precission )
+        kv_difference =  ( generator_bus.basekv * generator_bus.vmag )  - bus_kv
         generator = self.psat.get_generator_data( generator_bus_number, generators_id[0] )
 
         # Return generator's bus number, generator's bus name and it's bus kv difference in array form
