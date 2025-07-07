@@ -44,10 +44,10 @@ config = ini_handler.get_config_file()
 sys.path.append( config['psat']['psat_installation_path'] + "/python" )
 
 input_settings = [
-    ini_handler.get_data('input', 'use_input_for_buses', 'boolean'),
-    ini_handler.get_data('input', 'use_input_for_transformers', 'boolean'),
-    ini_handler.get_data('input', 'use_input_for_generators', 'boolean'),
-    ini_handler.get_data('input', 'use_input_for_shunts', 'boolean')
+    ini_handler.get('input', 'use_input_for_buses', bool),
+    ini_handler.get('input', 'use_input_for_transformers', bool),
+    ini_handler.get('input', 'use_input_for_generators', bool),
+    ini_handler.get('input', 'use_input_for_shunts', bool)
 ]
 
 psat = PsatFunctions()
@@ -61,18 +61,18 @@ model = config['psat']['psat_model_name']
 save_path = config['results']['results_save_path']
 subsystem = config['psat']['subsystem']
 
-minimum_max_mw_generated = ini_handler.get_data('calculations','minimum_max_mw_generators','int')
+minimum_max_mw_generated = ini_handler.get('calculations','minimum_max_mw_generators',int)
 
 tmp_model = "tmp.pfb"
 start_timestamp = TimeManager.get_current_utc_time()
 
 # If set to true in config, add timestamp to result files
-timestamp = start_timestamp if ini_handler.get_data('results','add_timestamp_to_files','boolean') else ''
+timestamp = start_timestamp if ini_handler.get('results','add_timestamp_to_files',bool) else ''
 
 # If set to true in config, create a results folder
-if ini_handler.get_data('results','create_results_folder','boolean'):
+if ini_handler.get('results','create_results_folder',bool):
     save_path = FileHandler.create_directory(save_path, config['results']['folder_name'] , 
-    ini_handler.get_data('results','add_timestamp_to_folder','boolean'))
+    ini_handler.get('results','add_timestamp_to_folder',bool))
 
 # Initialize csv files handler
 csv = CsvFile(save_path, timestamp, config['results']['files_prefix'])
@@ -83,7 +83,7 @@ psat.calculate_powerflow()
 
 filtered_buses = elements_lists.get_buses(subsystem)
 filtered_generators = elements_lists.get_generators(minimum_max_mw_generated, subsystem)
-filtered_shunts = elements_lists.get_shunts(ini_handler.get_data('calculations','shunt_minimal_abs_mvar_value','int'), subsystem)
+filtered_shunts = elements_lists.get_shunts(ini_handler.get('calculations','shunt_minimal_abs_mvar_value',int), subsystem)
 filtered_transformers = elements_lists.get_transformers(subsystem)
 
 generators_with_buses = elements_lists.get_generators_with_buses()
@@ -91,20 +91,20 @@ generators_with_buses = elements_lists.get_generators_with_buses()
 buses_base_kv = elements_lists.get_buses_base_kv()
 generators_base_mvar = elements_lists.get_generators_base_mvar()
 
+
 psat.save_as_tmp_model(f"{model_path}/{tmp_model}")
 
 # Create files and write them elements from model
 csv.write_buses_file( filtered_buses )
 csv.write_gens_file( filtered_generators )
 csv.write_shunts_file( filtered_shunts )
-csv.write_trfs_file( filtered_transformers, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )
+csv.write_trfs_file( filtered_transformers, ini_handler.get('calculations', 'transformer_ratio_margins', float) )
 
 if True in input_settings:
     raport = RaportHandler(elements_lists.get_found_elements_dict(), 
                            elements_lists.get_input_elements_dict(), elements_lists.get_model_elements_dict()).get_raport_data()
 
     FileHandler.create_info_file( save_path/"raport.txt", raport)
-
 
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
 q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
@@ -119,7 +119,7 @@ for bus_number_key in generators_with_buses:
 
     # Try to change generators bus kv value up or down, recalculate power flow and return row with bus number, bus name, change difference
     row = elements_func.set_new_generators_bus_kv_value( bus_number_key, generators_with_buses[ bus_number_key ], 
-        ini_handler.get_data('calculations','node_kv_change_value', 'int') )
+        ini_handler.get('calculations','node_kv_change_value', int) )
     v_row = row.copy()
     q_row = row.copy()
     
@@ -149,7 +149,7 @@ for bus_number_key in generators_with_buses:
 # Iterate through each suitable transformer 
 for transformer in filtered_transformers:
 
-    row = elements_func.set_transformer_new_tap(transformer, ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float') )
+    row = elements_func.set_transformer_new_tap(transformer, ini_handler.get('calculations', 'transformer_ratio_margins', float) )
 
     v_row = row.copy()
     q_row = row.copy()
@@ -230,10 +230,10 @@ buses: {input_settings[0]}
 transformers: {input_settings[1]}
 generators: {input_settings[2]}
 shunts: {input_settings[3]}\n
-Minimum upper generated MW limit for generators: {ini_handler.get_data('calculations','minimum_max_mw_generators','int')}
-Node KV +/- change: {ini_handler.get_data('calculations','node_kv_change_value', 'int')}
-Transformer ratio precission error margin: {ini_handler.get_data('calculations', 'transformer_ratio_margins', 'float')}
-Shunt minimum absolute mvar value: {ini_handler.get_data('calculations', 'shunt_minimal_abs_mvar_value', 'int')}
-Keep transformers not connected to 400 bus: {ini_handler.get_data('calculations','keep_transformers_without_connection_to_400_bus','boolean')}\n
+Minimum upper generated MW limit for generators: {ini_handler.get('calculations','minimum_max_mw_generators',int)}
+Node KV +/- change: {ini_handler.get('calculations','node_kv_change_value', int)}
+Transformer ratio precission error margin: {ini_handler.get('calculations', 'transformer_ratio_margins', float)}
+Shunt minimum absolute mvar value: {ini_handler.get('calculations', 'shunt_minimal_abs_mvar_value', int)}
+Keep transformers not connected to 400 bus: {ini_handler.get('calculations','keep_transformers_without_connection_to_400_bus',bool)}\n
 """
 FileHandler.create_info_file( save_path/"info.txt", info_text)

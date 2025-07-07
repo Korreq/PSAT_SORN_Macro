@@ -12,7 +12,7 @@ class CsvFile:
     Handles writing semicolon-delimited CSV exports for PSAT data.
     """
     
-    def __init__(self, path: str | Path, timestamp: str='', prefix: str='') -> None:
+    def __init__(self, path: str | Path, timestamp: str='', prefix: str=''):
         self.functions = ElementsFunctions()
         self.psat = PsatFunctions()
 
@@ -25,7 +25,7 @@ class CsvFile:
             self.name_addons += '_'
        
     # Write header and rows to file using dialect and name set in init 
-    def write_to_file(self, name: str, header: list[str], rows: list[list[str | float]]) -> None:
+    def write_to_file(self, name: str, header: list[str], rows: list[list[str | float]]) :
         """
         Write header and rows into 
         path / "{name_addons}{name}.csv".
@@ -37,7 +37,7 @@ class CsvFile:
             writer.writerow(header)
             writer.writerows(rows)
 
-    def write_buses_file(self, buses: list) -> None:
+    def write_buses_file(self, buses: list):
         header = ["Name", "Type", "KV"]
         rows: list[list[str]] = []
 
@@ -49,7 +49,7 @@ class CsvFile:
             
         self.write_to_file("buses", header, rows)
 
-    def write_gens_file(self, generators):
+    def write_gens_file(self, generators: list):
         header = ["Bus", "Name", "MW min", "Current MW", "MW max", "Mvar min", "Current Mvar", "Mvar max"]
         rows: list[list[str]] = []
 
@@ -68,7 +68,7 @@ class CsvFile:
         self.write_to_file("generators", header, rows)
 
 
-    def write_shunts_file(self, shunts):
+    def write_shunts_file(self, shunts: list):
         header = ["Bus", "Name", "Status", "Nominal MW", "MW", "Nominal Mvar", "Mvar"]
         rows: list[list[str]] = []
 
@@ -86,7 +86,7 @@ class CsvFile:
         self.write_to_file("shunts", header, rows)
 
     
-    def write_trfs_file(self, transformers, margin):
+    def write_trfs_file(self, transformers: list, margin):
         header = ["From Bus", "To Bus", "Name", "Current tap", "Max tap"]
         rows: list[list[str | float]] = []
 

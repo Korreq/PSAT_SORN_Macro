@@ -19,6 +19,8 @@ class ElementsLists:
             self.json = JsonHandler(input_file)
             self.input_settings = input_settings
         
+            self.input_dict = self.json.get_input_dict()
+
             self.found_elements = {
                 "buses": [],
                 "transformers": [],                
@@ -40,7 +42,7 @@ class ElementsLists:
         buses = self.psat.get_element_list("bus", subsys)
 
         if self.use_input_file and self.input_settings[0]:
-            buses_filter_list = self.json.get_buses()
+            buses_filter_list = self.input_dict["buses"]
 
         for bus in buses:
             bus_name = bus.name[:-4].strip()
@@ -69,7 +71,7 @@ class ElementsLists:
         transformers = self.psat.get_element_list('adjustable_transformer',subsys)
 
         if self.use_input_file and self.input_settings[1]:
-            transformers_filter_list = self.json.get_transformers()
+            transformers_filter_list = self.input_dict["transformers"]
 
         for transformer in transformers:
             from_bus, to_bus = self.psat.get_bus_data(transformer.frbus), self.psat.get_bus_data(transformer.tobus)
@@ -104,7 +106,7 @@ class ElementsLists:
         shunts = self.psat.get_element_list("fixed_shunt", subsys)
 
         if self.use_input_file and self.input_settings[3]:
-            shunts_filter_list = self.json.get_shunts()
+            shunts_filter_list = self.input_dict["shunts"]
 
         for shunt in shunts:
             shunt_bus = self.psat.get_bus_data(shunt.bus)
@@ -136,30 +138,29 @@ class ElementsLists:
         generators = self.psat.get_element_list("generator", subsys)
 
         if self.use_input_file and self.input_settings[2]:
-            generators_filter_list = self.json.get_generators()
+            generators_filter_list = self.input_dict["generators"]
 
         for generator in generators:
             generator_bus = self.psat.get_bus_data(generator.bus)
 
             if generators_filter_list:
-                if generator.name in generators_filter_list:
+                if generator.eqname in generators_filter_list:
                     filtered_generators.append(generator)
 
-                    if generator.name not in self.found_elements["generators"]:
-                        self.found_elements["generators"].append(generator.name)
+                    if generator.eqname not in self.found_elements["generators"]:
+                        self.found_elements["generators"].append(generator.eqname)
            
             # If generator's max mw is enough then find if it's connected to filtered buses
             if generator.mwmax >= mw_min:
                 for bus in self.filtered_buses:
                     if generator_bus.name == bus.name:
                         if generators_filter_list: 
-                            if generator.name not in self.model_elements["generators"]:
-                                self.model_elements["generators"].append(generator.name)
+                            if generator.eqname not in self.model_elements["generators"]:
+                                self.model_elements["generators"].append(generator.eqname)
                         else:
                             filtered_generators.append(generator)
                         break
                
-
         self.filtered_generators = filtered_generators
         return filtered_generators       
 
@@ -228,6 +229,7 @@ class ElementsLists:
 
         return self.model_elements
     
+    
     def get_input_elements_dict(self):
 
-        return self.json.get_input_dict()
+        return self.input_dict
