@@ -8,7 +8,6 @@ class PsatFunctions:
 
 
     def get_element_list( self, element_type_string, subsys="mainsub" ):
-
         elements = []
 
         # Match element name to it's PSAT type and coresponding function

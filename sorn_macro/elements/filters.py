@@ -37,7 +37,6 @@ class ElementsLists:
 
    
     def get_buses(self, subsys):
-
         filtered_buses, buses_filter_list = [], []
         buses = self.psat.get_element_list("bus", subsys)
 
@@ -66,7 +65,6 @@ class ElementsLists:
 
 
     def get_transformers(self, subsys):
-
         filtered_transformers, transformers_filter_list = [], []
         transformers = self.psat.get_element_list('adjustable_transformer',subsys)
 
@@ -101,7 +99,6 @@ class ElementsLists:
 
  
     def get_shunts(self, abs_minimum, subsys):
-
         filtered_shunts, shunts_filter_list = [], []
         shunts = self.psat.get_element_list("fixed_shunt", subsys)
 
@@ -133,7 +130,6 @@ class ElementsLists:
 
 
     def get_generators(self, mw_min, subsys):
-
         filtered_generators, generators_filter_list = [], []
         generators = self.psat.get_element_list("generator", subsys)
 
@@ -166,7 +162,6 @@ class ElementsLists:
 
 
     def get_generators_with_buses(self):
-
         buses_with_gens_id = {}
 
         for generator in self.filtered_generators:
@@ -184,7 +179,6 @@ class ElementsLists:
 
 
     def get_buses_base_kv(self):
-
         buses_kv = []
         for bus in self.filtered_buses:
             bus_kv = bus.basekv * bus.vmag
@@ -194,7 +188,6 @@ class ElementsLists:
 
 
     def get_generators_base_mvar(self):
-
         generators_mvar = []
         for generator in self.filtered_generators:
             generators_mvar.append( generator.mvar )
@@ -203,7 +196,6 @@ class ElementsLists:
 
 
     def update_filtered_buses(self):
-
         for i, bus in enumerate(self.filtered_buses):
             bus = self.psat.get_bus_data(bus.number)
             self.filtered_buses[i] = bus
@@ -212,7 +204,6 @@ class ElementsLists:
 
 
     def update_filtered_generators(self):
-
         for i, generator in enumerate(self.filtered_generators):
             generator = self.psat.get_generator_data(generator.bus, generator.id)
             self.filtered_generators[i] = generator
@@ -221,15 +212,12 @@ class ElementsLists:
     
 
     def get_found_elements_dict(self):
-
         return self.found_elements
     
 
     def get_model_elements_dict(self):
-
         return self.model_elements
     
     
     def get_input_elements_dict(self):
-
         return self.input_dict

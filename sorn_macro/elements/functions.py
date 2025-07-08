@@ -7,20 +7,26 @@ class ElementsFunctions:
         self.psat = PsatFunctions()
         
         
-    def set_new_generators_bus_kv_value( self, generator_bus_number, generators_id, node_kv_change_value=1 ):
+    def set_new_generators_bus_kv_value( self, generator_bus_number, generators_id, tmp_model_path, node_kv_change_value=1 ):
         generator_bus = self.psat.get_bus_data( generator_bus_number )
 
         # Getting new kv change from base value and calculated bus kv
         changed_kv_vmag, bus_kv = self.get_bus_changed_kv_vmag( generator_bus, node_kv_change_value )
 
+        # Apply new kv changed value to all generators connected to bus
         self.set_generators_kv_limits( generator_bus_number, generators_id, changed_kv_vmag )
         self.psat.calculate_powerflow()
 
+        # Get generator bus with new calculated values
         generator_bus = self.psat.get_bus_data( generator_bus_number )
-
-        # Check if generators bus reached changed_kv_mag and set flag to false if not
+        
+        # Check if generators bus reached changed_kv_mag, if not try to change in opposite direction
         if round( generator_bus.vmag, 4 ) < round( changed_kv_vmag, 4 ):
-            
+
+            # Get old kv_difference
+            kv_difference =  ( generator_bus.basekv * generator_bus.vmag )  - bus_kv
+            self.psat.load_model(tmp_model_path)
+
             # Getting new kv change from base value and calculated bus kv
             changed_kv_vmag, bus_kv = self.get_bus_changed_kv_vmag( generator_bus, - node_kv_change_value )
 
@@ -28,15 +34,28 @@ class ElementsFunctions:
             self.set_generators_kv_limits( generator_bus_number, generators_id, changed_kv_vmag )
             self.psat.calculate_powerflow()
 
-        # Get generator bus with new calculated values
-        generator_bus = self.psat.get_bus_data( generator_bus.number )
+            # Get generator bus with new calculated values
+            generator_bus = self.psat.get_bus_data( generator_bus.number )
+         
+            # Use kv change, that have higger difference value  
+            if abs( ( generator_bus.basekv * generator_bus.vmag )  - bus_kv ) < kv_difference:
+                self.psat.load_model(tmp_model_path)
+
+                # Getting new kv change from base value and calculated bus kv
+                changed_kv_vmag, bus_kv = self.get_bus_changed_kv_vmag( generator_bus, - node_kv_change_value )
+
+                # Apply new kv changed value to all generators connected to bus
+                self.set_generators_kv_limits( generator_bus_number, generators_id, changed_kv_vmag )
+                self.psat.calculate_powerflow()
+
+                # Get generator bus with new calculated values
+                generator_bus = self.psat.get_bus_data( generator_bus.number )
 
         # Calculate bus new kv and it's kv change from base value 
         kv_difference =  ( generator_bus.basekv * generator_bus.vmag )  - bus_kv
-        generator = self.psat.get_generator_data( generator_bus_number, generators_id[0] )
 
         # Return generator's bus number, generator's bus name and it's bus kv difference in array form
-        return [ generator.bus, "-", generator_bus.name[:-4].strip(), locale.format_string('%G',kv_difference) ]
+        return [ generator_bus.number, "-", generator_bus.name[:-4].strip(), locale.format_string('%G',kv_difference) ]
 
 
     def set_transformer_new_tap( self, transformer, transformer_ratio_margin=0.05 ):

@@ -5,64 +5,26 @@ class RaportHandler:
         self.input_elements = input_elements
         self.model_elements = model_elements
 
+    def _get_missing_elements(self, source, reference):
+        missing = {key: [] for key in source}
+        for key, items in source.items():
+            ref_items = reference.get(key, [])
+            missing[key] = [item for item in items if item not in ref_items]
+        return missing
 
+    def _format_section(self, title: str, elements_dict):
+        section = f"\n{title}:\n"
+        for element_type, items in elements_dict.items():
+            section += f"\n{element_type}:\n"
+            section += "\n".join(str(item) for item in items) + "\n"
+        return section
+    
     def get_raport_data(self):
+        not_in_model = self._get_missing_elements(self.input_elements, self.found_elements)
+        only_in_model = self._get_missing_elements(self.model_elements, self.input_elements)
+
         raport_data = ""
-        is_found = False
-
-        not_in_model = {
-            "buses": [],
-            "transformers": [],                
-            "generators": [],              
-            "shunts": []              
-        }
-
-        only_in_model = {
-            "buses": [],
-            "transformers": [],                
-            "generators": [],              
-            "shunts": []        
-        }
-
-        for element in self.input_elements:
-            for input in self.input_elements[element]:
-                is_found = False
-
-                for found in self.found_elements[element]:
-                    if input == found:
-                        is_found = True
-                        break
-
-                if not is_found:
-                    not_in_model[element].append( input )
-
-
-        for element in self.model_elements:
-            for model in self.model_elements[element]:
-                is_found = False
-
-                for input in self.input_elements[element]:
-                    if input == model:
-                        is_found = True
-                        break
-                
-                if not is_found:
-                    only_in_model[element].append(model)
-
-       
-        for type in not_in_model:
-
-            raport_data += f"\n{type} not found in model:\n"
-
-            for element in not_in_model[type]:
-                raport_data += f"{element}\n"
-
-
-        for type in only_in_model:
-
-            raport_data += f"\n{type} only found in model:\n"
-
-            for element in only_in_model[type]:
-                raport_data += f"{element}\n"
+        raport_data += self._format_section("Elements not found in model", not_in_model)
+        raport_data += self._format_section("Elements only found in model", only_in_model)
 
         return raport_data
