@@ -84,7 +84,6 @@ class ElementsLists:
             # if transformers are 220 - 110, 400 - 220 , 400 - 110 then find if transformer is connected to filtered buses
             if (( from_bus.basekv != to_bus.basekv ) and 
                 ( to_bus.basekv in [110,220,400] or from_bus.basekv in [110,220,400] )):
-                   
                 for bus in self.filtered_buses:
                     if from_bus.name == bus.name or to_bus.name == bus.name:
                         if transformers_filter_list: 

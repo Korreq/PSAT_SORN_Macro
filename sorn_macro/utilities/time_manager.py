@@ -6,7 +6,7 @@ class TimeManager:
     Utility for generating UTC timestamps and measuring elapsed time.
     """
 
-    def __init__(self) -> None:
+    def __init__(self):
         # Use a monotonic clock to avoid issues if system time changes
         self._start = time.perf_counter()
 

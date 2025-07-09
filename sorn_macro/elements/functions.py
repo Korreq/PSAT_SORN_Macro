@@ -7,7 +7,7 @@ class ElementsFunctions:
         self.psat = PsatFunctions()
         
         
-    def set_new_generators_bus_kv_value( self, generator_bus_number, generators_id, tmp_model_path, node_kv_change_value=1 ):
+    def set_new_generators_bus_kv_value( self, generator_bus_number, generators_id, tmp_model_path, node_kv_change_value=1, difference_margin=0.05 ):
         generator_bus = self.psat.get_bus_data( generator_bus_number )
 
         # Getting new kv change from base value and calculated bus kv
@@ -21,7 +21,7 @@ class ElementsFunctions:
         generator_bus = self.psat.get_bus_data( generator_bus_number )
         
         # Check if generators bus reached changed_kv_mag, if not try to change in opposite direction
-        if round( generator_bus.vmag, 4 ) < round( changed_kv_vmag, 4 ):
+        if not ElementsFunctions.is_in_margin( generator_bus.vmag, changed_kv_vmag, difference_margin ):
 
             # Get old kv_difference
             kv_difference =  ( generator_bus.basekv * generator_bus.vmag )  - bus_kv
@@ -59,7 +59,6 @@ class ElementsFunctions:
 
 
     def set_transformer_new_tap( self, transformer, transformer_ratio_margin=0.05 ):
-
         beg_bus = self.psat.get_bus_data(transformer.frbus)
         end_bus = self.psat.get_bus_data(transformer.tobus)
 
@@ -68,7 +67,6 @@ class ElementsFunctions:
         # Change one tap down if possible, otherwise change tap up
         if( trf_current + trf_step <= trf_max ):
             transformer.fsratio += transformer.stepratio
-
         else:
             transformer.fsratio -= transformer.stepratio
 
@@ -85,7 +83,6 @@ class ElementsFunctions:
 
 
     def get_transformer_ratios( self, transformer, beg_bus_base_kv, end_bus_base_kv, transformer_ratio_margin, get_data_for_elements_file=False ):
-
         trf_from_side = transformer.fsratio * beg_bus_base_kv
         trf_to_side = transformer.tsratio * end_bus_base_kv
 
@@ -116,7 +113,6 @@ class ElementsFunctions:
 
     # Find generators by their id number and bus number, set thier kv bus limit and apply changes
     def set_generators_kv_limits(self, bus_number, generators_id, changed_kv_vmag):
-
         for generator_id in generators_id:
             generator = self.psat.get_generator_data(bus_number, generator_id)
             generator.vhi = generator.vlo = changed_kv_vmag
@@ -124,7 +120,6 @@ class ElementsFunctions:
 
     # Get changed kv value by specified value and it's multiplier from base value 
     def get_bus_changed_kv_vmag(self, bus, value):
-
         bus_kv = bus.basekv * bus.vmag
         bus_new_kv = bus_kv + value
         changed_kv_vmag = bus_new_kv / bus.basekv
@@ -133,12 +128,10 @@ class ElementsFunctions:
     
     # Get bus type name depending on it's type number
     def get_bus_type(self, bus):
-
         types = ["Load","Generator","Swing","Out of service"]
 
         if bus.type > 0 and bus.type < 5:
             name = types[ bus.type - 1 ]
-
         else:
             name = "Unknown"
 
@@ -152,17 +145,14 @@ class ElementsFunctions:
     # For each updated generator bus get differrence from base mvar and append it to q_row list. 
     # If first pass, then add bus name to q_header list 
     def get_generators_mvar_differrence_results(self, changed_generators, base_generators_mvar, first_pass):
-
         q_header = []
         q_row = []
 
         for i in range( len( changed_generators ) ):
-
             if first_pass:
                 q_header.append( changed_generators[i].eqname )
         
-            bus_q_change = locale.format_string('%G', float( changed_generators[i].mvar ) 
-                                                      - float( base_generators_mvar[i] ))
+            bus_q_change = locale.format_string('%G', changed_generators[i].mvar - base_generators_mvar[i])
 
             q_row.append( bus_q_change )
 
@@ -171,12 +161,10 @@ class ElementsFunctions:
     # For each updated buses get differrence from base kv and append it to v_row list.
     # If first pass, then add nodes name to v_row list 
     def get_changed_buses_results(self, changed_buses, base_buses_kv, first_pass):
-
         v_header = []
         v_row = []
 
         for i in range( len( changed_buses ) ):
-
             if first_pass:
                 v_header.append( changed_buses[i].name[:-4].strip() )
 
@@ -187,3 +175,10 @@ class ElementsFunctions:
 
         return v_row, v_header
        
+    @staticmethod
+    def is_in_margin(input_value, desired_value, margin):
+        if( input_value > (desired_value - (margin * desired_value)) and 
+           input_value < (desired_value + (margin * desired_value))):
+            return True  
+        
+        return False

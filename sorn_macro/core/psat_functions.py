@@ -88,8 +88,8 @@ class PsatFunctions:
     def calculate_powerflow(self):
         psat_command('Solve', self.error) # type: ignore
 
-
-    def print(self, message):
+    @staticmethod
+    def print(message: str):
         psat_msg( message ) # type: ignore
 
     # Set generator data, requires bus number, generator id and generator object

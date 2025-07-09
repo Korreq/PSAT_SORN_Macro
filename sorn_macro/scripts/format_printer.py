@@ -6,5 +6,5 @@ if __name__ == '__main__':
 
     for element in print_element_list:
 
-        print(f'{{"name":"{element}"}},')
+        print(f'{{"name":"{element.strip()}"}},')
         
