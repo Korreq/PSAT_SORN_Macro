@@ -12,6 +12,8 @@ class ElementsLists:
         self.filtered_transformers = []
         self.filtered_shunts = []
 
+        self.all_generators_in_buses = []
+
         self.use_input_file = False
 
         if input_file:
@@ -129,11 +131,36 @@ class ElementsLists:
 
 
     def get_generators(self, mw_min, subsys):
-        filtered_generators, generators_filter_list = [], []
+        all_generators_in_buses, filtered_generators, generators_filter_list = [], [], []
         generators = self.psat.get_element_list("generator", subsys)
 
         if self.use_input_file and self.input_settings[2]:
             generators_filter_list = self.input_dict["generators"]
+
+        for generator in generators:
+            generator_bus = self.psat.get_bus_data(generator.bus)
+
+            for bus in self.filtered_buses:
+                if generator_bus.name == bus.name:
+                    if generators_filter_list:
+                        all_generators_in_buses.append(generator)
+
+                        if generator.eqname in generators_filter_list:
+                            filtered_generators.append(generator)
+
+                            if generator.eqname not in self.found_elements["generators"]:
+                                self.found_elements["generators"].append(generator.eqname)
+
+                        if generator.mwmax >= mw_min and generator.eqname not in self.model_elements["generators"]:
+                            self.model_elements["generators"].append(generator.eqname)
+
+                    elif generator.mwmax >= mw_min:
+                        filtered_generators.append(generator)
+                    break
+
+        self.all_generators_in_buses = all_generators_in_buses
+
+        '''
 
         for generator in generators:
             generator_bus = self.psat.get_bus_data(generator.bus)
@@ -144,18 +171,18 @@ class ElementsLists:
 
                     if generator.eqname not in self.found_elements["generators"]:
                         self.found_elements["generators"].append(generator.eqname)
-           
+            
             # If generator's max mw is enough then find if it's connected to filtered buses
             if generator.mwmax >= mw_min:
                 for bus in self.filtered_buses:
                     if generator_bus.name == bus.name:
-                        if generators_filter_list: 
+                        if generators_filter_list:
                             if generator.eqname not in self.model_elements["generators"]:
                                 self.model_elements["generators"].append(generator.eqname)
                         else:
                             filtered_generators.append(generator)
                         break
-               
+        '''  
         self.filtered_generators = filtered_generators
         return filtered_generators       
 
@@ -163,6 +190,38 @@ class ElementsLists:
     def get_generators_with_buses(self):
         buses_with_gens_id = {}
 
+        if self.use_input_file and self.input_settings[2]:
+            generator_list = self.all_generators_in_buses
+        else:
+            generator_list = self.filtered_generators
+
+        for generator in generator_list:
+            bus = self.psat.get_bus_data(generator.bus)
+
+            label = ""
+
+            is_found = False
+
+            if self.use_input_file and self.input_settings[2]:
+                for filtered_gen in self.filtered_generators:
+                    if generator.eqname == filtered_gen.eqname:
+                        is_found = True
+                        break
+            
+                if is_found:
+                    label = "in_filter"
+                else:
+                    label = "outside_filter"
+
+            if bus.number not in buses_with_gens_id:
+                buses_with_gens_id[bus.number] = [[generator.id, label]]
+
+            else:
+                gens_id = buses_with_gens_id.get( bus.number )
+                gens_id.append( [generator.id, label] )
+                buses_with_gens_id[bus.number] = gens_id
+
+        '''
         for generator in self.filtered_generators:
             bus = self.psat.get_bus_data(generator.bus)
 
@@ -173,6 +232,7 @@ class ElementsLists:
                 gens_id = buses_with_gens_id.get( bus.number )
                 gens_id.append( generator.id )
                 buses_with_gens_id[bus.number] = gens_id
+        '''
 
         return buses_with_gens_id
 

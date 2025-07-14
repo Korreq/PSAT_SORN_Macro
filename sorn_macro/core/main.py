@@ -98,7 +98,7 @@ csv.write_trfs_file( filtered_transformers, ini_handler.get('calculations', 'tra
 
 if True in input_settings:
     raport = RaportHandler(elements_lists.get_found_elements_dict(), 
-                           elements_lists.get_input_elements_dict(), elements_lists.get_model_elements_dict()).get_raport_data()
+        elements_lists.get_input_elements_dict(), elements_lists.get_model_elements_dict()).get_raport_data()
 
     FileHandler.create_info_file( save_path/"raport.txt", raport)
 

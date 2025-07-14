@@ -114,8 +114,16 @@ class ElementsFunctions:
     # Find generators by their id number and bus number, set thier kv bus limit and apply changes
     def set_generators_kv_limits(self, bus_number, generators_id, changed_kv_vmag):
         for generator_id in generators_id:
-            generator = self.psat.get_generator_data(bus_number, generator_id)
-            generator.vhi = generator.vlo = changed_kv_vmag
+            generator = self.psat.get_generator_data(bus_number, generator_id[0])
+            
+            self.psat.print(f"{generator.id}")
+            
+            if generator_id[1] == "outside_filter":
+                generator.mvarmax = generator.mvarmin = generator.mvar
+                
+            else:
+                generator.vhi = generator.vlo = changed_kv_vmag
+
             self.psat.set_generator_data(generator)    
 
     # Get changed kv value by specified value and it's multiplier from base value 
