@@ -20,8 +20,11 @@ class ElementsFunctions:
         # Get generator bus with new calculated values
         generator_bus = self.psat.get_bus_data( generator_bus_number )
         
+
+        if round(generator_bus.vmag, 4) < round(changed_kv_vmag, 4):
+
         # Check if generators bus reached changed_kv_mag, if not try to change in opposite direction
-        if not ElementsFunctions.is_in_margin( generator_bus.vmag, changed_kv_vmag, difference_margin ):
+        #if not ElementsFunctions.is_in_margin( generator_bus.vmag, changed_kv_vmag, difference_margin ):
 
             # Get old kv_difference
             kv_difference =  ( generator_bus.basekv * generator_bus.vmag )  - bus_kv
@@ -38,11 +41,11 @@ class ElementsFunctions:
             generator_bus = self.psat.get_bus_data( generator_bus.number )
          
             # Use kv change, that have higger difference value  
-            if abs( ( generator_bus.basekv * generator_bus.vmag )  - bus_kv ) < kv_difference:
+            if abs(  ( generator_bus.basekv * generator_bus.vmag )  - bus_kv ) <= abs( kv_difference ):
                 self.psat.load_model(tmp_model_path)
 
                 # Getting new kv change from base value and calculated bus kv
-                changed_kv_vmag, bus_kv = self.get_bus_changed_kv_vmag( generator_bus, - node_kv_change_value )
+                changed_kv_vmag, bus_kv = self.get_bus_changed_kv_vmag( generator_bus, node_kv_change_value )
 
                 # Apply new kv changed value to all generators connected to bus
                 self.set_generators_kv_limits( generator_bus_number, generators_id, changed_kv_vmag )
@@ -121,8 +124,7 @@ class ElementsFunctions:
             if generator_id[1] == "outside_filter":
                 generator.mvarmax = generator.mvarmin = generator.mvar
                 
-            else:
-                generator.vhi = generator.vlo = changed_kv_vmag
+            generator.vhi = generator.vlo = changed_kv_vmag
 
             self.psat.set_generator_data(generator)    
 

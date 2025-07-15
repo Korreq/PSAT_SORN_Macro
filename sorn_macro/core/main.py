@@ -76,7 +76,6 @@ csv = CsvFile(save_path, timestamp, config['results']['files_prefix'])
 # Calculate powerflow and save changed model as temporary model
 psat.calculate_powerflow()
 
-
 filtered_buses = elements_lists.get_buses(subsystem)
 filtered_generators = elements_lists.get_generators(minimum_max_mw_generated, subsystem)
 filtered_shunts = elements_lists.get_shunts(ini_handler.get('calculations','shunt_minimal_abs_mvar_value',int), subsystem)
@@ -86,7 +85,6 @@ generators_with_buses = elements_lists.get_generators_with_buses()
 
 buses_base_kv = elements_lists.get_buses_base_kv()
 generators_base_mvar = elements_lists.get_generators_base_mvar()
-
 
 psat.save_as_tmp_model(f"{model_path}/{tmp_model}")
 
@@ -112,6 +110,14 @@ first_pass = True
 
 # Iterate through each node, that has sutaible generator directly connected  
 for bus_number_key in generators_with_buses:
+
+    count = 0
+    for generator_label in generators_with_buses[ bus_number_key ]:
+        if generator_label[1] == "outside_filter":
+            count += 1
+
+    if len( generators_with_buses[ bus_number_key ] ) <= count:
+        continue
 
     # Try to change generators bus kv value up or down, recalculate power flow and return row with bus number, bus name, change difference
     row = elements_func.set_new_generators_bus_kv_value( bus_number_key, generators_with_buses[ bus_number_key ],
@@ -204,6 +210,7 @@ for shunt in filtered_shunts:
 
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
+
 
 # Save filled rows and headers to corresponding result files
 csv.write_to_file("v_sensitivity", v_header, v_rows)
