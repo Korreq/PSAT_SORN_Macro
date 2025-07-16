@@ -50,7 +50,9 @@ class ElementsLists:
 
             if buses_filter_list:
                 if bus_name in buses_filter_list:
-                    filtered_buses.append(bus)
+                    
+                    if bus.type != 4:
+                        filtered_buses.append(bus)
 
                     if bus_name not in self.found_elements["buses"]:
                         self.found_elements["buses"].append(bus_name)
@@ -59,7 +61,8 @@ class ElementsLists:
                 if buses_filter_list:
                     if bus_name not in self.model_elements["buses"]:
                         self.model_elements["buses"].append(bus_name)
-                else:
+
+                elif bus.type != 4:
                     filtered_buses.append(bus)
 
         self.filtered_buses = filtered_buses
@@ -78,7 +81,9 @@ class ElementsLists:
 
             if transformers_filter_list:
                 if transformer.name in transformers_filter_list:
-                    filtered_transformers.append(transformer)
+                    
+                    if transformer.status != 0 and transformer.minratio != transformer.maxratio:
+                        filtered_transformers.append(transformer)
 
                     if transformer.name not in self.found_elements["transformers"]:
                         self.found_elements["transformers"].append(transformer.name)
@@ -91,7 +96,8 @@ class ElementsLists:
                         if transformers_filter_list: 
                             if transformer.name not in self.model_elements["transformers"]:
                                 self.model_elements["transformers"].append(transformer.name)
-                        else:
+
+                        elif transformer.status != 0 and transformer.minratio != transformer.maxratio:
                             filtered_transformers.append(transformer)
                         break
 
@@ -143,7 +149,9 @@ class ElementsLists:
             for bus in self.filtered_buses:
                 if generator_bus.name == bus.name:
                     if generators_filter_list:
-                        all_generators_in_buses.append(generator)
+
+                        if generator.status != 0:
+                            all_generators_in_buses.append(generator)
 
                         if generator.eqname in generators_filter_list:
                             filtered_generators.append(generator)
@@ -154,35 +162,11 @@ class ElementsLists:
                         if generator.mwmax >= mw_min and generator.eqname not in self.model_elements["generators"]:
                             self.model_elements["generators"].append(generator.eqname)
 
-                    elif generator.mwmax >= mw_min:
+                    elif generator.mwmax >= mw_min and generator.status != 0:
                         filtered_generators.append(generator)
                     break
 
-        self.all_generators_in_buses = all_generators_in_buses
-
-        '''
-
-        for generator in generators:
-            generator_bus = self.psat.get_bus_data(generator.bus)
-
-            if generators_filter_list:
-                if generator.eqname in generators_filter_list:
-                    filtered_generators.append(generator)
-
-                    if generator.eqname not in self.found_elements["generators"]:
-                        self.found_elements["generators"].append(generator.eqname)
-            
-            # If generator's max mw is enough then find if it's connected to filtered buses
-            if generator.mwmax >= mw_min:
-                for bus in self.filtered_buses:
-                    if generator_bus.name == bus.name:
-                        if generators_filter_list:
-                            if generator.eqname not in self.model_elements["generators"]:
-                                self.model_elements["generators"].append(generator.eqname)
-                        else:
-                            filtered_generators.append(generator)
-                        break
-        '''  
+        self.all_generators_in_buses = all_generators_in_buses  
         self.filtered_generators = filtered_generators
         return filtered_generators       
 
@@ -220,19 +204,6 @@ class ElementsLists:
                 gens_id = buses_with_gens_id.get( bus.number )
                 gens_id.append( [generator.id, label] )
                 buses_with_gens_id[bus.number] = gens_id
-
-        '''
-        for generator in self.filtered_generators:
-            bus = self.psat.get_bus_data(generator.bus)
-
-            if bus.number not in buses_with_gens_id:
-                buses_with_gens_id[bus.number] = [generator.id]
-
-            else:
-                gens_id = buses_with_gens_id.get( bus.number )
-                gens_id.append( generator.id )
-                buses_with_gens_id[bus.number] = gens_id
-        '''
 
         return buses_with_gens_id
 

@@ -86,7 +86,7 @@ generators_with_buses = elements_lists.get_generators_with_buses()
 buses_base_kv = elements_lists.get_buses_base_kv()
 generators_base_mvar = elements_lists.get_generators_base_mvar()
 
-psat.save_as_tmp_model(f"{model_path}/{tmp_model}")
+psat.save_as_new_model(f"{model_path}/{tmp_model}")
 
 # Create files and write them elements from model
 csv.write_buses_file( filtered_buses )
