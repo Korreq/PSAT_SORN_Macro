@@ -12,11 +12,10 @@ class JsonHandler:
         with path.open() as f:
             self.data = json.load(f)
             
+            
     def get_input_dict(self) -> Dict[str, List[str]]:
-        """
-        Return a dictionary mapping each category to a sorted list of 'name' values.
-        Categories: buses, transformers, generators, shunts.
-        """
+        """Return a dictionary mapping each category to a sorted list of 'name' values.
+        Categories: buses, transformers, generators, shunts."""
         categories = ("buses", "transformers", "generators", "shunts")
         return {
             cat: sorted(

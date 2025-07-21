@@ -5,12 +5,14 @@ class RaportHandler:
         self.input_elements = input_elements
         self.model_elements = model_elements
 
+
     def _get_missing_elements(self, source, reference):
         missing = {key: [] for key in source}
         for key, items in source.items():
             ref_items = reference.get(key, [])
             missing[key] = [item for item in items if item not in ref_items]
         return missing
+
 
     def _format_section(self, title: str, elements_dict):
         section = f"\n{title}:\n"
@@ -19,6 +21,7 @@ class RaportHandler:
             section += "\n".join(str(item) for item in items) + "\n"
         return section
     
+
     def get_raport_data(self):
         not_in_model = self._get_missing_elements(self.input_elements, self.found_elements)
         only_in_model = self._get_missing_elements(self.model_elements, self.input_elements)

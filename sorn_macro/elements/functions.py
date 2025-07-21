@@ -20,11 +20,8 @@ class ElementsFunctions:
         # Get generator bus with new calculated values
         generator_bus = self.psat.get_bus_data( generator_bus_number )
         
-
-        if round(generator_bus.vmag, 4) < round(changed_kv_vmag, 4):
-
         # Check if generators bus reached changed_kv_mag, if not try to change in opposite direction
-        #if not ElementsFunctions.is_in_margin( generator_bus.vmag, changed_kv_vmag, difference_margin ):
+        if round(generator_bus.vmag, 4) < round(changed_kv_vmag, 4):
 
             # Get old kv_difference
             kv_difference =  ( generator_bus.basekv * generator_bus.vmag )  - bus_kv
@@ -184,7 +181,8 @@ class ElementsFunctions:
             v_row.append( bus_kv_change )
 
         return v_row, v_header
-       
+    
+    '''   
     @staticmethod
     def is_in_margin(input_value, desired_value, margin):
         if( input_value > (desired_value - (margin * desired_value)) and 
@@ -192,3 +190,4 @@ class ElementsFunctions:
             return True  
         
         return False
+    '''

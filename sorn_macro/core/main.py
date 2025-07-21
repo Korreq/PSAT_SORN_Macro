@@ -102,10 +102,7 @@ if True in input_settings:
 
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
 q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
-v_rows = [] 
-q_rows = []
-tmp_row = []
-tmp_header = []
+v_rows, q_rows, tmp_row, tmp_header = [], [], [], []
 first_pass = True
 
 # Iterate through each node, that has sutaible generator directly connected  

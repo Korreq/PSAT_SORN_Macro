@@ -50,23 +50,10 @@ class PsatFunctions:
         component = psat_comp_id( element_type, 1, '' ) # type: ignore
         next_component = get_next_comp( subsys, component, self.error ) # type: ignore
 
-        # Until there is next component available and element is sutaible add it to array
+        # Until there is next component available add element to array
         while next_component:
             element = element_func(component, self.error)
-
             next_component = get_next_comp( subsys, component, self.error ) # type: ignore
-
-            #if element_type == ctype.bs: # type: ignore
-            #    if element.type == 4:
-            #        continue
-
-            #if element_type not in [ctype.ar, ctype.zn, ctype.bs, ctype.fxsh]: # type: ignore
-                #if element.status == 0:
-                #    continue
-
-                #if element_type == ctype.ultc: # type: ignore
-                #    if element.minratio == element.maxratio:
-                #        continue
 
             elements.append(element)
 
@@ -80,7 +67,7 @@ class PsatFunctions:
 
     
     def close_model(self):
-        '''# Close current model without saving'''
+        '''Close current model without saving'''
         psat_command('CloseProject:NoSave', self.error) # type: ignore
 
     

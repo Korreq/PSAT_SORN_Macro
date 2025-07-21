@@ -6,9 +6,7 @@ class FileHandler:
 
     @staticmethod
     def delete_files_from_directory(directory: str | Path, substring: str) -> None:
-        """
-        Delete files containing `substring` in their name, silently skipping errors.
-        """
+        """Delete files containing `substring` in their name, silently skipping errors."""
         dir_path = Path(directory)
         for file in dir_path.glob(f"*{substring}*"):
             try:
@@ -18,11 +16,8 @@ class FileHandler:
                 pass
 
     @staticmethod
-    def create_directory(base_path: str | Path, name: str = "", 
-                         add_timestamp: bool = False) -> Path:
-        """
-        Create a directory at base_path/name. Skip silently if creation fails.
-        """
+    def create_directory(base_path: str | Path, name: str = "", add_timestamp: bool = False) -> Path:
+        """Create a directory at base_path/name. Skip silently if creation fails."""
         base = Path(base_path)
         if not name:
             return base
@@ -43,9 +38,7 @@ class FileHandler:
     
     @staticmethod
     def create_info_file(file_path: str | Path, text: str) -> None:
-        """
-        Write text to file_path and skip on error.
-        """
+        """Write text to file_path and skip on error."""
         path = Path(file_path)
         try:
             path.write_text(text)

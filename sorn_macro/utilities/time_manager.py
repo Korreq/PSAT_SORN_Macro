@@ -2,9 +2,7 @@ from datetime import datetime, timezone, timedelta
 import time
 
 class TimeManager:
-    """
-    Utility for generating UTC timestamps and measuring elapsed time.
-    """
+    """Utility for generating UTC timestamps and measuring elapsed time."""
 
     def __init__(self):
         # Use a monotonic clock to avoid issues if system time changes
@@ -12,17 +10,13 @@ class TimeManager:
 
     @staticmethod
     def get_current_utc_time(fmt: str = "%Y-%m-%d--%H-%M-%S") -> str:
-        """
-        Return the current UTC time as a formatted string. 
-        Default time format is: 2025-01-01--01-00-00 .
-        """
+        """Return the current UTC time as a formatted string. 
+        Default time format is: 2025-01-01--01-00-00 ."""
         return datetime.now(timezone.utc).strftime(fmt)
 
     # Calculate the diffrence bettween timer's start and current timer and return it in readable format 
     def elapsed_time(self) -> str:
-        """
-        Compute time elapsed since instantiation.
-
+        """Compute time elapsed since instantiation.
         Returns:
             A zero-padded "HH:MM:SS" string.
         """
