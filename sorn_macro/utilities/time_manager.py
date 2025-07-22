@@ -14,12 +14,9 @@ class TimeManager:
         Default time format is: 2025-01-01--01-00-00 ."""
         return datetime.now(timezone.utc).strftime(fmt)
 
-    # Calculate the diffrence bettween timer's start and current timer and return it in readable format 
+
     def elapsed_time(self) -> str:
-        """Compute time elapsed since instantiation.
-        Returns:
-            A zero-padded "HH:MM:SS" string.
-        """
+        """Compute time elapsed since instantiation and return it in a zero-padded "HH:MM:SS" string."""
         elapsed = time.perf_counter() - self._start
         delta = timedelta(seconds=round(elapsed))
 
