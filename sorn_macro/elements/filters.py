@@ -1,6 +1,8 @@
 from core.psat_functions import PsatFunctions
 from handlers.json_handler import JsonHandler
 
+from collections import defaultdict
+
 '''
 TODO: Change saving to model_elements dictonary, to add every element from model not only connected to filtered buses
 '''
@@ -56,11 +58,11 @@ class ElementsLists:
         for bus in buses:
             # Normalize bus name by trimming last 4 characters and whitespaces
             name = bus.name[:-4].strip()
-            is_turned_off = (bus.type == 4)
+            in_service = (bus.type != 4)
 
             # Filter buses by input file if filter list is present. Record elements from the model found in input file.
             if filter_list and name in filter_list:
-                if not is_turned_off:
+                if in_service:
                     filtered_elements.append(bus)
 
                 if name not in self.found_elements["buses"]:
@@ -71,7 +73,7 @@ class ElementsLists:
                 if filter_list:
                     if name not in self.model_elements["buses"]:
                         self.model_elements["buses"].append(name)
-                elif not is_turned_off:
+                elif in_service:
                     filtered_elements.append(bus)
 
         self.filtered_buses = filtered_elements
@@ -89,6 +91,7 @@ class ElementsLists:
         )
 
         filtered_elements = []
+        found_transformers = []
         target_kv = {110, 220, 400}
         for transformer in transformers:
             name = transformer.name
@@ -96,30 +99,32 @@ class ElementsLists:
             movable_tap = (transformer.minratio != transformer.maxratio)
 
             # Filter transformers by input file if filter list is present. Record elements from the model found in input file.
-            if filter_list and name in filter_list:
-                if in_service and movable_tap:
-                    filtered_elements.append(transformer)
+            if filter_list:
+                if name not in self.model_elements["transformers"]:
+                    self.model_elements["transformers"].append(name)
+
+                if name in filter_list:
+                    if in_service and movable_tap:
+                        filtered_elements.append(transformer)
                 
-                if name not in self.found_elements["transformers"]:
-                    self.found_elements["transformers"].append(name)
+                    if name not in self.found_elements["transformers"]:
+                        self.found_elements["transformers"].append(name)
 
-            # Filter transformers if basekv on both sides are in 110, 220, 400 and not the same. 
-            # Record every element found in the model if filter list is present
-            from_bus = self.psat.get_bus_data(transformer.frbus)
-            to_bus = self.psat.get_bus_data(transformer.tobus)
-            kv_mismatch = (from_bus.basekv != to_bus.basekv)
-            connects_key_kv = bool({from_bus.basekv, to_bus.basekv} & target_kv)
+            else:
+                # Filter transformers if basekv on both sides are in 110, 220, 400 and not the same. 
+                # Record every element found in the model if filter list is present
+                from_bus = self.psat.get_bus_data(transformer.frbus)
+                to_bus = self.psat.get_bus_data(transformer.tobus)
+                kv_mismatch = (from_bus.basekv != to_bus.basekv)
+                connects_key_kv = bool({from_bus.basekv, to_bus.basekv} & target_kv)
 
-            if kv_mismatch and connects_key_kv:
-                # Check connection to any previously filtered bus
-                for bus in self.filtered_buses:
-                    if bus.name in (from_bus.name, to_bus.name):
-                        if filter_list:
-                            if name not in self.model_elements["transformers"]:
-                                self.model_elements["transformers"].append(name)
-                        elif in_service and movable_tap:
+                if kv_mismatch and connects_key_kv:
+                    # Check connection to any previously filtered bus
+                    for bus in self.filtered_buses:
+                        if bus.name in (from_bus.name, to_bus.name) and name not in found_transformers and in_service and movable_tap:
                             filtered_elements.append(transformer)
-                        break
+                            found_transformers.append(name)
+                            break
             
         self.filtered_transformers = filtered_elements
         return filtered_elements
@@ -138,99 +143,98 @@ class ElementsLists:
         filtered_elements = []
         for shunt in shunts:
             name = shunt.name
-            rating_ok = abs(shunt.nommvar) >= abs_minimum
+            rating_ok = (abs(shunt.nommvar) >= abs_minimum)
             shunt_bus = self.psat.get_bus_data(shunt.bus)
 
             # Filter shunt by input file if filter list is present. Record elements from the model found in input file.
-            if filter_list and name in filter_list:
-                filtered_elements.append(shunt)
+            if filter_list:
+                if name not in self.model_elements["shunts"]:
+                    self.model_elements["shunts"].append(name)
 
-                if name not in self.found_elements["shunts"]:
-                    self.found_elements["shunts"].append(name)
+                if name in filter_list:
+                    filtered_elements.append(shunt)
 
-            for bus in self.filtered_buses:
-                if bus.name == shunt_bus.name:
-                    if filter_list:
-                        if name not in self.model_elements["shunts"]:
-                            self.model_elements["shunts"].append(name)
-                    
-                    elif rating_ok:
+                    if name not in self.found_elements["shunts"]:
+                        self.found_elements["shunts"].append(name)
+            else:
+                for bus in self.filtered_buses:
+                    if bus.name == shunt_bus.name and rating_ok:
                         filtered_elements.append(shunt)
-                    break
+                        break
 
         self.filtered_shunts = filtered_elements
         return filtered_elements
 
 
     def get_generators(self, mw_min, subsys):
-        all_generators_in_buses, filtered_generators, generators_filter_list = [], [], []
+        '''Retrive and filter generators from given model in given subsystem. Can filter generators
+        based on input file or exclude generators if the max possible generated MW is less than specified.'''
         generators = self.psat.get_element_list("generator", subsys)
+        filter_list = (
+            self.input_dict.get("generators", [])
+            if self.use_input_file and self.input_settings[2]
+            else []
+        )
 
-        if self.use_input_file and self.input_settings[2]:
-            generators_filter_list = self.input_dict["generators"]
-
+        filtered_elements = []
+        all_elements = []
         for generator in generators:
+            eq_name = generator.eqname
+            rating_ok = (generator.mwmax >= mw_min)
+            in_service = (generator.status != 0)
             generator_bus = self.psat.get_bus_data(generator.bus)
 
+            if filter_list and eq_name not in self.model_elements["generators"]:
+                self.model_elements["generators"].append(eq_name)
+
             for bus in self.filtered_buses:
-                if generator_bus.name == bus.name:
-                    if generators_filter_list:
+                if bus.name == generator_bus.name:
+                    if filter_list:
+                        if in_service:
+                            all_elements.append(generator)
 
-                        if generator.status != 0:
-                            all_generators_in_buses.append(generator)
+                        if eq_name in filter_list:
+                            filtered_elements.append(generator)
 
-                        if generator.eqname in generators_filter_list:
-                            filtered_generators.append(generator)
-
-                            if generator.eqname not in self.found_elements["generators"]:
-                                self.found_elements["generators"].append(generator.eqname)
-
-                        if generator.mwmax >= mw_min and generator.eqname not in self.model_elements["generators"]:
-                            self.model_elements["generators"].append(generator.eqname)
-
-                    elif generator.mwmax >= mw_min and generator.status != 0:
-                        filtered_generators.append(generator)
+                            if eq_name not in self.found_elements["generators"]:
+                                self.found_elements["generators"].append(eq_name)
+        
+                    elif rating_ok and in_service:
+                        filtered_elements.append(generator)
                     break
 
-        self.all_generators_in_buses = all_generators_in_buses  
-        self.filtered_generators = filtered_generators
-        return filtered_generators       
+        self.all_generators_in_buses = all_elements
+        self.filtered_generators = filtered_elements
+        return filtered_elements
 
-
+      
     def get_generators_with_buses(self):
-        buses_with_gens_id = {}
 
-        if self.use_input_file and self.input_settings[2]:
-            generator_list = self.all_generators_in_buses
+        use_input = self.use_input_file and self.input_settings[2]
+
+        # Pick the correct source of generators
+        generator_list = (
+            self.all_generators_in_buses
+            if use_input
+            else self.filtered_generators
+        )
+
+        if use_input:
+            filtered_eq_names = {generator.eqname for generator in self.filtered_generators}
+            def label_for(generator):
+                return "in_filter" if generator.eqname in filtered_eq_names else "outside_filter"
         else:
-            generator_list = self.filtered_generators
+            def label_for(generator):
+                return ""
 
+        buses_with_gens = defaultdict(list)
         for generator in generator_list:
             bus = self.psat.get_bus_data(generator.bus)
+            buses_with_gens[bus.number].append((generator.id, label_for(generator)))
 
-            label = ""
+        return dict(buses_with_gens)
 
-            is_found = False
-
-            if self.use_input_file and self.input_settings[2]:
-                for filtered_gen in self.filtered_generators:
-                    if generator.eqname == filtered_gen.eqname:
-                        is_found = True
-                        break
-            
-                label = "in_filter" if is_found else "outside_filter"
-
-            if bus.number not in buses_with_gens_id:
-                buses_with_gens_id[bus.number] = [[generator.id, label]]
-
-            else:
-                gens_id = buses_with_gens_id.get( bus.number )
-                gens_id.append( [generator.id, label] )
-                buses_with_gens_id[bus.number] = gens_id
-
-        return buses_with_gens_id
-
-
+     
     def get_buses_base_kv(self):
         buses_kv = []
         for bus in self.filtered_buses:
