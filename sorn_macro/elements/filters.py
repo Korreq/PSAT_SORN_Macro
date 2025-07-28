@@ -4,7 +4,10 @@ from handlers.json_handler import JsonHandler
 from collections import defaultdict
 
 '''
-TODO: Change saving to model_elements dictonary, to add every element from model not only connected to filtered buses
+TODO: Change saving to model_elements dictonary, to add every element from model not only connected to filtered buses.
+
+      Make filter list make changes to elements status in model.
+
 '''
 
 class ElementsLists:
@@ -24,7 +27,7 @@ class ElementsLists:
         # Prepare input file structures if needed
         if self.use_input_file:
             self.json = JsonHandler(input_file)
-            self.input_dict = self.json.get_input_dict()
+            self.input_dict = self.json.get_input_cndict()
         else:
             self.input_dict = {}
 
@@ -59,15 +62,23 @@ class ElementsLists:
             # Normalize bus name by trimming last 4 characters and whitespaces
             name = bus.name[:-4].strip()
             in_service = (bus.type != 4)
+            zone = bus.zone
 
             # Filter buses by input file if filter list is present. Record elements from the model found in input file.
-            if filter_list and name in filter_list:
-                if in_service:
-                    filtered_elements.append(bus)
+            if filter_list:
+                for filter_bus in filter_list:
+                    if filter_bus["name"] in name and zone == filter_bus.get("zone_number", 0):
 
-                if name not in self.found_elements["buses"]:
-                    self.found_elements["buses"].append(name)
+                        in_service = filter_bus.get("enabled", 0) == 1
+                        if in_service:
+                            filtered_elements.append(bus)
+                        else:
+                            bus.status = 0  # Set bus status to out of service
+                            self.psat.set_bus_data(bus)
 
+                        if name not in self.found_elements["buses"]:
+                            self.found_elements["buses"].append(name)
+                
             # Filter buses by it's basekv value. Record every element found in the model if filter list is present
             if bus.basekv in (110, 220, 400):
                 if filter_list:
@@ -189,16 +200,25 @@ class ElementsLists:
 
             for bus in self.filtered_buses:
                 if bus.name == generator_bus.name:
+
                     if filter_list:
+                        
+                        for filter_gen in filter_list:
+                            if eq_name in filter_gen["name"]:
+                                in_service = filter_gen.get("enabled", 0) == 1
+                                if in_service:
+                                    filtered_elements.append(generator)
+
+                                else:
+                                    generator.status = 0  # Set generator status to out of service
+                                    self.psat.set_generator_data(generator)
+
+                                if eq_name not in self.found_elements["generators"]:
+                                    self.found_elements["generators"].append(eq_name)
+
                         if in_service:
                             all_elements.append(generator)
 
-                        if eq_name in filter_list:
-                            filtered_elements.append(generator)
-
-                            if eq_name not in self.found_elements["generators"]:
-                                self.found_elements["generators"].append(eq_name)
-        
                     elif rating_ok and in_service:
                         filtered_elements.append(generator)
                     break
@@ -209,7 +229,7 @@ class ElementsLists:
 
       
     def get_generators_with_buses(self):
-
+        '''Retrieve generators with their connected buses. If input file is used, label generators as "in_filter" or "outside_filter".'''
         use_input = self.use_input_file and self.input_settings[2]
 
         # Pick the correct source of generators

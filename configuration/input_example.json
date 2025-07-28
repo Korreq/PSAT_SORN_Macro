@@ -1,12 +1,12 @@
 {
     "buses":[
-        {"name": "busName"}
+        {"name": "stationCode", "zone": 1, "enabled": 1}
+    ],
+     "generators":[
+        {"name": "generatorName", "enabled": 1}
     ],
     "transformers":[
         {"name": "transformerName"}
-    ],
-    "generators":[
-        {"name": "generatorName"}
     ],
     "shunts":[
         {"name": "shuntName"}

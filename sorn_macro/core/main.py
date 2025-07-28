@@ -15,9 +15,11 @@ from core.psat_functions import PsatFunctions
 from elements.filters import ElementsLists
 from elements.functions import ElementsFunctions
 from elements.raport import RaportHandler
+from elements.model_modifier import ModelModifier
 from handlers.csv_handler import CsvFile
 from handlers.file_handler import FileHandler
 from handlers.ini_handler import IniHandler
+from handlers.json_handler import JsonHandler
 from utilities.time_manager import TimeManager
 
 '''
@@ -45,21 +47,21 @@ input_settings = [
     ini_handler.get('input', 'use_input_for_generators', bool),
     ini_handler.get('input', 'use_input_for_shunts', bool)
 ]
+input_handler = JsonHandler(config['input']['input_file_path']) if any(input_settings) else None
+input_dict = input_handler.get_input_dict() if input_handler else {}
+model_modifier = ModelModifier(input_dict) if input_handler else None
+model_modifier.modify_model(config['psat']['subsystem']) if model_modifier else None
 
 psat = PsatFunctions()
-elements_lists = ElementsLists(input_settings, config['input']['input_file_path'])
+
+
 elements_func = ElementsFunctions()
 time_mgr = TimeManager()
 
-#Assign paths and file names to main model and for temporary file
-model_path = config['psat']['psat_model_path']
-model = config['psat']['psat_model_name']
-save_path = config['results']['results_save_path']
-subsystem = config['psat']['subsystem']
 
-minimum_max_mw_generated = ini_handler.get('calculations','minimum_max_mw_generators',int)
 
-tmp_model = "tmp.pfb"
+
+
 start_timestamp = TimeManager.get_current_utc_time()
 
 # If set to true in config, add timestamp to result files
@@ -70,11 +72,24 @@ if ini_handler.get('results','create_results_folder',bool):
     save_path = FileHandler.create_directory(save_path, config['results']['folder_name'] , 
     ini_handler.get('results','add_timestamp_to_folder',bool))
 
+#Assign paths and file names to main model and for temporary file
+model_path = config['psat']['psat_model_path']
+model = config['psat']['psat_model_name']
+save_path = config['results']['results_save_path']
+subsystem = config['psat']['subsystem']
+
+minimum_max_mw_generated = ini_handler.get('calculations','minimum_max_mw_generators',int)
+
+tmp_model = "tmp.pfb"
+
+elements_lists = ElementsLists(input_settings, config['input']['input_file_path'])
+
 # Initialize csv files handler
 csv = CsvFile(save_path, timestamp, config['results']['files_prefix'])
 
 # Calculate powerflow and save changed model as temporary model
 psat.calculate_powerflow()
+psat.save_as_new_model(f"{model_path}/{tmp_model}")
 
 filtered_buses = elements_lists.get_buses(subsystem)
 filtered_generators = elements_lists.get_generators(minimum_max_mw_generated, subsystem)
@@ -85,8 +100,6 @@ generators_with_buses = elements_lists.get_generators_with_buses()
 
 buses_base_kv = elements_lists.get_buses_base_kv()
 generators_base_mvar = elements_lists.get_generators_base_mvar()
-
-psat.save_as_new_model(f"{model_path}/{tmp_model}")
 
 # Create files and write them elements from model
 csv.write_buses_file( filtered_buses )
@@ -118,8 +131,7 @@ for bus_number_key in generators_with_buses:
 
     # Try to change generators bus kv value up or down, recalculate power flow and return row with bus number, bus name, change difference
     row = elements_func.set_new_generators_bus_kv_value( bus_number_key, generators_with_buses[ bus_number_key ],
-        model_path + '/' + tmp_model, ini_handler.get('calculations','node_kv_change_value', int),
-        ini_handler.get('calculations','generator_node_difference_margin', float) )
+        model_path + '/' + tmp_model, ini_handler.get('calculations','node_kv_change_value', int) )
     v_row = row.copy()
     q_row = row.copy()
     

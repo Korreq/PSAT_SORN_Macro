@@ -13,15 +13,10 @@ class JsonHandler:
             self.data = json.load(f)
             
             
-    def get_input_dict(self) -> Dict[str, List[str]]:
-        """Return a dictionary mapping each category to a sorted list of 'name' values.
-        Categories: buses, transformers, generators, shunts."""
-        categories = ("buses", "transformers", "generators", "shunts")
+    def get_input_dict(self) -> Dict[str, List[dict]]:
+        """Return a dictionary mapping each category to its list of full item dicts."""
+        categories = ("buses", "generators", "transformers", "shunts")
         return {
-            cat: sorted(
-                item["name"]
-                for item in self.data.get(cat, [])
-                if "name" in item
-            )
+            cat: self.data.get(cat, [])
             for cat in categories
         }

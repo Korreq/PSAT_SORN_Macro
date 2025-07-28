@@ -7,7 +7,7 @@ class ElementsFunctions:
         self.psat = PsatFunctions()
         
         
-    def set_new_generators_bus_kv_value( self, generator_bus_number, generators_id, tmp_model_path, node_kv_change_value=1, difference_margin=0.05 ):
+    def set_new_generators_bus_kv_value( self, generator_bus_number, generators_id, tmp_model_path, node_kv_change_value=1 ):
         generator_bus = self.psat.get_bus_data( generator_bus_number )
 
         # Getting new kv change from base value and calculated bus kv
