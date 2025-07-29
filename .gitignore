@@ -172,4 +172,5 @@ cython_debug/
 
 # Ignore all files/directories with "result" in name and if it's a input.json file (using json file as an model's filter)
 input.json
+input_copy.json
 *result*

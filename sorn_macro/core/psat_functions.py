@@ -84,7 +84,12 @@ class PsatFunctions:
     def print(message: str):
         psat_msg( message ) # type: ignore
 
+
+    def set_bus_data(self, bus_object):
+        '''Set bus based on given bus object.'''
+        set_bus_dat(bus_object.number, bus_object, self.error) # type: ignore
     
+
     def set_generator_data(self, generator_object):
         '''Set generator based on given generator object.'''
         set_gen_dat(generator_object.bus, generator_object.id, generator_object, self.error) # type: ignore
@@ -99,21 +104,21 @@ class PsatFunctions:
         '''Set shunt based on given shunt object.'''
         set_fx_shunt_dat(shunt_object.bus, shunt_object.id, shunt_object, self.error) # type: ignore
 
-
+    
     def get_bus_data(self, bus_id):
         '''Get bus object with given bus id, return error if not found.'''
         return get_bus_dat(bus_id, self.error) # type: ignore
     
 
+    def get_generator_data(self, bus_id, generator_id):
+        '''Get generator object with given bus id and generator id, throws psat error if not found'''
+        return get_gen_dat(bus_id, generator_id, self.error) # type: ignore
+
+
     def get_transformer_data(self, from_bus_id, to_bus_id, transformer_id, transformer_section):
         '''Get adjuctable transformer object with given data, throws psat error if not found.'''
         return get_2w_trans_dat(from_bus_id, to_bus_id, transformer_id, transformer_section, self.error) # type: ignore
 
-
-    def get_generator_data(self, bus_id, generator_id):
-        '''Get generator object with given bus id and generator id, throws psat error if not found'''
-        return get_gen_dat(bus_id, generator_id, self.error) # type: ignore
-    
 
     def get_fixed_shunt_data(self, bus_id, shunt_id):
         '''Get shunt object with given bus id and shunt id, throws psat error if not found'''

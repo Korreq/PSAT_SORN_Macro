@@ -27,7 +27,7 @@ class ElementsLists:
         # Prepare input file structures if needed
         if self.use_input_file:
             self.json = JsonHandler(input_file)
-            self.input_dict = self.json.get_input_cndict()
+            self.input_dict = self.json.get_input_dict()
         else:
             self.input_dict = {}
 
@@ -67,15 +67,11 @@ class ElementsLists:
             # Filter buses by input file if filter list is present. Record elements from the model found in input file.
             if filter_list:
                 for filter_bus in filter_list:
-                    if filter_bus["name"] in name and zone == filter_bus.get("zone_number", 0):
+                    if filter_bus["name"] in name and zone == filter_bus.get("zone", 0):
 
-                        in_service = filter_bus.get("enabled", 0) == 1
                         if in_service:
                             filtered_elements.append(bus)
-                        else:
-                            bus.status = 0  # Set bus status to out of service
-                            self.psat.set_bus_data(bus)
-
+                        
                         if name not in self.found_elements["buses"]:
                             self.found_elements["buses"].append(name)
                 
@@ -84,6 +80,7 @@ class ElementsLists:
                 if filter_list:
                     if name not in self.model_elements["buses"]:
                         self.model_elements["buses"].append(name)
+
                 elif in_service:
                     filtered_elements.append(bus)
 
@@ -205,13 +202,8 @@ class ElementsLists:
                         
                         for filter_gen in filter_list:
                             if eq_name in filter_gen["name"]:
-                                in_service = filter_gen.get("enabled", 0) == 1
-                                if in_service:
+                                if in_service and generator_bus.type == 2:
                                     filtered_elements.append(generator)
-
-                                else:
-                                    generator.status = 0  # Set generator status to out of service
-                                    self.psat.set_generator_data(generator)
 
                                 if eq_name not in self.found_elements["generators"]:
                                     self.found_elements["generators"].append(eq_name)
@@ -219,8 +211,9 @@ class ElementsLists:
                         if in_service:
                             all_elements.append(generator)
 
-                    elif rating_ok and in_service:
+                    elif rating_ok and in_service and generator_bus.type == 2:
                         filtered_elements.append(generator)
+
                     break
 
         self.all_generators_in_buses = all_elements
@@ -240,17 +233,18 @@ class ElementsLists:
         )
 
         if use_input:
-            filtered_eq_names = {generator.eqname for generator in self.filtered_generators}
-            def label_for(generator):
-                return "in_filter" if generator.eqname in filtered_eq_names else "outside_filter"
-        else:
-            def label_for(generator):
-                return ""
+            buses_of_filtered_generators = {
+                generator.bus
+                for generator in self.filtered_generators
+            } 
 
         buses_with_gens = defaultdict(list)
         for generator in generator_list:
+            if generator.bus not in buses_of_filtered_generators:
+                continue
+
             bus = self.psat.get_bus_data(generator.bus)
-            buses_with_gens[bus.number].append((generator.id, label_for(generator)))
+            buses_with_gens[bus.number].append(generator.id)
 
         return dict(buses_with_gens)
 

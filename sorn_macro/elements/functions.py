@@ -111,19 +111,14 @@ class ElementsFunctions:
         
         return trf_current_tap, trf_current, trf_max, trf_step
 
-    # Find generators by their id number and bus number, set thier kv bus limit and apply changes
+    # Find generators by their id number and bus number, set their kv bus limit if mvar min and max are not the same and apply changes
     def set_generators_kv_limits(self, bus_number, generators_id, changed_kv_vmag):
         for generator_id in generators_id:
-            generator = self.psat.get_generator_data(bus_number, generator_id[0])
+            generator = self.psat.get_generator_data(bus_number, generator_id)
             
-            self.psat.print(f"{generator.id}")
-            
-            if generator_id[1] == "outside_filter":
-                generator.mvarmax = generator.mvarmin = generator.mvar
-                
-            generator.vhi = generator.vlo = changed_kv_vmag
-
-            self.psat.set_generator_data(generator)    
+            if generator.mvarmax != generator.mvarmin:
+                generator.vhi = generator.vlo = changed_kv_vmag
+                self.psat.set_generator_data(generator)    
 
     # Get changed kv value by specified value and it's multiplier from base value 
     def get_bus_changed_kv_vmag(self, bus, value):
@@ -182,12 +177,3 @@ class ElementsFunctions:
 
         return v_row, v_header
     
-    '''   
-    @staticmethod
-    def is_in_margin(input_value, desired_value, margin):
-        if( input_value > (desired_value - (margin * desired_value)) and 
-           input_value < (desired_value + (margin * desired_value))):
-            return True  
-        
-        return False
-    '''
