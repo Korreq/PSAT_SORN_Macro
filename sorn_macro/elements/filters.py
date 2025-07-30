@@ -46,7 +46,6 @@ class ElementsLists:
                 "shunts": []               
             }
 
-   
     def get_buses(self, subsys):
         '''Retrieve and filter bus elements from given model in given subsystem. Can filter buses based on input file or 
         exclude buses with base kv other than 110, 220 and 400.'''
@@ -63,6 +62,7 @@ class ElementsLists:
             name = bus.name[:-4].strip()
             in_service = (bus.type != 4)
             zone = bus.zone
+            filter_name = f'{name[:3]}**{zone}'
 
             # Filter buses by input file if filter list is present. Record elements from the model found in input file.
             if filter_list:
@@ -72,14 +72,14 @@ class ElementsLists:
                         if in_service:
                             filtered_elements.append(bus)
                         
-                        if name not in self.found_elements["buses"]:
-                            self.found_elements["buses"].append(name)
+                        if filter_name not in self.found_elements["buses"]:
+                            self.found_elements["buses"].append(filter_name)
                 
             # Filter buses by it's basekv value. Record every element found in the model if filter list is present
             if bus.basekv in (110, 220, 400):
                 if filter_list:
-                    if name not in self.model_elements["buses"]:
-                        self.model_elements["buses"].append(name)
+                    if filter_name not in self.model_elements["buses"]:
+                        self.model_elements["buses"].append(filter_name)
 
                 elif in_service:
                     filtered_elements.append(bus)
@@ -291,4 +291,29 @@ class ElementsLists:
     
     
     def get_input_elements_dict(self):
-        return self.input_dict
+        input_generators = []
+        input_buses = []
+        input_shunts = []
+        input_transformers = []
+
+        for bus in self.input_dict.get("buses", []):
+            converted_name = f'{bus["name"]}**{bus.get("zone", "?")}'
+            input_buses.append(converted_name)
+
+        for generator in self.input_dict.get("generators", []):
+            input_generators.append(generator["name"])
+
+        for transformer in self.input_dict.get("transformers", []):
+            input_transformers.append(transformer["name"])
+
+        for shunt in self.input_dict.get("shunts", []):
+            input_shunts.append(shunt["name"])
+
+        input_elements = {
+            "buses": input_buses,
+            "transformers": input_transformers,
+            "generators": input_generators,
+            "shunts": input_shunts
+        }
+
+        return input_elements

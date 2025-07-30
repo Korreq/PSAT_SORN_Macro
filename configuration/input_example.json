@@ -1,6 +1,6 @@
 {
     "buses":[
-        {"name": "stationCode", "zone": 1, "enabled": 1}
+        {"name": "stationCode", "zone": 1}
     ],
      "generators":[
         {"name": "generatorName", "enabled": 1}
