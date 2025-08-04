@@ -8,9 +8,7 @@ from core.psat_functions import PsatFunctions
 csv.register_dialect('excel-semicolon','excel', delimiter=';')
 
 class CsvFile:
-    """
-    Handles writing semicolon-delimited CSV exports for PSAT data.
-    """
+    """Handles writing semicolon-delimited CSV exports for PSAT data."""
     
     def __init__(self, path: str | Path, timestamp: str='', prefix: str=''):
         self.functions = ElementsFunctions()

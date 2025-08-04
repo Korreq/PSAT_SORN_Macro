@@ -13,12 +13,7 @@ class IniHandler:
         self.parser.read(path)
 
 
-    def get(
-        self,
-        section: str,
-        option: str,
-        cast: Type = str
-    ) -> Any:
+    def get( self, section: str, option: str, cast: Type = str ):
         """Return a value from [section] option, cast to str, bool, int, or float."""
         cast_map: Dict[Type, Any] = {
             str: self.parser.get,

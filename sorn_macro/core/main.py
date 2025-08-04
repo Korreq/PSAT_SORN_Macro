@@ -25,14 +25,6 @@ from handlers.ini_handler import IniHandler
 
 from utilities.time_manager import TimeManager
 
-'''
-TODO:
-    *Result files for all elements in model ~
-    *Add missing data to info file ~
-    *Add missing comments ~ 
-
-'''
-
 #Set locale based on system's locale
 locale.setlocale(locale.LC_ALL, '')
 
@@ -53,9 +45,9 @@ start_timestamp = TimeManager.get_current_utc_time()
 # If set to true in config, add timestamp to result files
 timestamp = start_timestamp if ini_handler.get('results','add_timestamp_to_files',bool) else ''
 
-#Assign paths and file names to main model and for temporary file
+# Get model path, model name, save path, subsystem and input file path from config
 model_path = config['psat']['psat_model_path']
-model = config['psat']['psat_model_name']
+model_name = config['psat']['psat_model_name']
 save_path = config['results']['results_save_path']
 subsystem = config['psat']['subsystem']
 input_file_path = config['input']['input_file_path']
@@ -89,6 +81,7 @@ csv = CsvFile(save_path, timestamp, config['results']['files_prefix'])
 psat.calculate_powerflow()
 psat.save_as_new_model(f"{model_path}/{tmp_model}")
 
+# Get filtered elements from model based on input settings 
 elements_lists = ElementsLists(input_settings, input_file_path)
 
 filtered_buses = elements_lists.get_buses(subsystem)
@@ -101,12 +94,13 @@ generators_with_buses = elements_lists.get_generators_with_buses()
 buses_base_kv = elements_lists.get_buses_base_kv()
 generators_base_mvar = elements_lists.get_generators_base_mvar()
 
-# Create files and write them elements from model
+# Write filtered elements to csv files
 csv.write_buses_file( filtered_buses )
 csv.write_gens_file( filtered_generators )
 csv.write_shunts_file( filtered_shunts )
 csv.write_trfs_file( filtered_transformers, ini_handler.get('calculations', 'transformer_ratio_margins', float) )
 
+# If any of input settings is true, create raport with found elements, input elements and model elements
 if True in input_settings:
     raport = RaportHandler(elements_lists.get_found_elements_dict(), 
         elements_lists.get_input_elements_dict(), elements_lists.get_model_elements_dict()).get_raport_data()
@@ -118,7 +112,7 @@ q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
 v_rows, q_rows, tmp_row, tmp_header = [], [], [], []
 first_pass = True
 
-# Iterate through each node, that has sutaible generator directly connected  
+# Iterate through each bus, that has sutaible generator directly connected  
 for bus_number_key in generators_with_buses:
 
     # Try to change generators bus kv value up or down, recalculate power flow and return row with bus number, bus name, change difference
@@ -226,7 +220,7 @@ duration = time_mgr.elapsed_time()
 psat.print(f"Elapsed time: {duration}")
 
 # Create info file of results
-info_text = f"""Model: {model}
+info_text = f"""Model: {model_name}
 Subsystem: {subsystem}
 Date: {start_timestamp}
 Duration: {duration}\n

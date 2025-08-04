@@ -7,6 +7,8 @@ class RaportHandler:
 
 
     def _get_missing_elements(self, source, reference):
+        """Compare two dictionaries of elements and return a dictionary
+        with keys from the source and lists of items that are not in the reference."""
         missing = {key: [] for key in source}
         for key, items in source.items():
             ref_items = reference.get(key, [])
@@ -15,6 +17,7 @@ class RaportHandler:
 
 
     def _format_section(self, title: str, elements_dict):
+        """Format a section of the report with a title and elements."""
         section = f"\n{title}:\n"
         for element_type, items in elements_dict.items():
             section += f"\n{element_type}:\n"

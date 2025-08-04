@@ -3,12 +3,6 @@ from handlers.json_handler import JsonHandler
 
 from collections import defaultdict
 
-'''
-TODO: Change saving to model_elements dictonary, to add every element from model not only connected to filtered buses.
-
-      Make filter list make changes to elements status in model.
-
-'''
 
 class ElementsLists:
 
