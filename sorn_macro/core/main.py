@@ -1,8 +1,6 @@
 """
     Start this script by running run.py in terminal from sorn_macro directory:
-
-        python scripts/run.py
-        
+        python scripts/run.py        
 """
 
 import locale
@@ -205,7 +203,6 @@ for shunt in filtered_shunts:
 
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
-
 
 # Save filled rows and headers to corresponding result files
 csv.write_to_file("v_sensitivity", v_header, v_rows)

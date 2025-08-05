@@ -24,10 +24,7 @@ class CsvFile:
        
     # Write header and rows to file using dialect and name set in init 
     def write_to_file(self, name: str, header: list[str], rows: list[list[str | float]]) :
-        """
-        Write header and rows into 
-        path / "{name_addons}{name}.csv".
-        """
+        """Write header and rows into path / "{name_addons}{name}.csv"."""
         file_path = self.path / f"{self.name_addons}{name}.csv"
 
         with file_path.open('w', newline='') as fp:
