@@ -18,7 +18,7 @@ if __name__ == '__main__':
     os.environ["SORN_WORKING_DIRECTORY"] = base_dir
 
     # Run the PSAT automation script using data from the config
-    psat = config['psat']['psat_installation_path']    
+    psat = config['psat']['psat_installation_path'] + '/bin'    
     model_with_path = os.path.join(config['psat']['psat_model_path'], config['psat']['psat_model_name'])
     main_path = os.path.join(os.path.dirname(os.path.dirname( __file__ )), 'core', 'main.py')
 

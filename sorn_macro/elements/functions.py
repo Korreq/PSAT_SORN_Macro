@@ -1,5 +1,7 @@
-from core.psat_functions import PsatFunctions
 import locale
+
+from core.psat_functions import PsatFunctions
+
 
 class ElementsFunctions:
 

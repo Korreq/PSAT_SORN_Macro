@@ -1,7 +1,7 @@
+from collections import defaultdict
+
 from core.psat_functions import PsatFunctions
 from handlers.json_handler import JsonHandler
-
-from collections import defaultdict
 
 
 class ElementsLists:

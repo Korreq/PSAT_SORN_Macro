@@ -32,7 +32,7 @@ os.environ.pop("SORN_WORKING_DIRECTORY")
 config = ini_handler.get_config_file()
 
 #Add psat isntall loacation to enviromental variables
-sys.path.append( config['psat']['psat_installation_path'] + "/python" )
+sys.path.append( config['psat']['psat_installation_path'] + "bin/python" )
 
 psat = PsatFunctions()
 elements_func = ElementsFunctions()
@@ -69,8 +69,10 @@ if input_settings[0] and input_settings[2] and input_file_path != "":
 
 # If set to true in config, create a results folder
 if ini_handler.get('results','create_results_folder',bool):
-    save_path = FileHandler.create_directory(save_path, config['results']['folder_name'] , 
-    ini_handler.get('results','add_timestamp_to_folder',bool))
+    save_path = FileHandler.create_directory(
+        save_path, config['results']['folder_name'] , 
+        ini_handler.get('results','add_timestamp_to_folder',bool)
+    )
 
 # Initialize csv files handler
 csv = CsvFile(save_path, timestamp, config['results']['files_prefix'])
@@ -210,7 +212,7 @@ csv.write_to_file("q_sensitivity", q_header, q_rows)
 
 # Close model and delete all temporary model files
 psat.close_model()
-#FileHandler.delete_files_from_directory(model_path,"tmp")
+FileHandler.delete_files_from_directory(model_path,"tmp")
 
 # Show whole duration of program run
 duration = time_mgr.elapsed_time()

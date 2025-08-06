@@ -1,6 +1,7 @@
+from typing import Any, Dict, Type
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Any, Dict, Type
+
 
 class IniHandler:
     """Load an INI file and retrieve typed values or the entire config as dicts."""
