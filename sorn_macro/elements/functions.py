@@ -26,7 +26,7 @@ class ElementsFunctions:
         if round(generator_bus.vmag, 4) < round(changed_kv_vmag, 4):
 
             # Get old kv_difference
-            kv_difference =  ( generator_bus.basekv * generator_bus.vmag )  - bus_kv
+            kv_difference = ( generator_bus.basekv * generator_bus.vmag ) - bus_kv
             self.psat.load_model(tmp_model_path)
 
             # Getting new kv change from base value and calculated bus kv
@@ -118,9 +118,8 @@ class ElementsFunctions:
         for generator_id in generators_id:
             generator = self.psat.get_generator_data(bus_number, generator_id)
             
-            if generator.mvarmax != generator.mvarmin:
-                generator.vhi = generator.vlo = changed_kv_vmag
-                self.psat.set_generator_data(generator)    
+            generator.vhi = generator.vlo = changed_kv_vmag
+            self.psat.set_generator_data(generator)    
 
     # Get changed kv value by specified value and it's multiplier from base value 
     def get_bus_changed_kv_vmag(self, bus, value):
