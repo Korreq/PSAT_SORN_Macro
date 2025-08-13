@@ -41,7 +41,7 @@ time_mgr = TimeManager()
 start_timestamp = TimeManager.get_current_utc_time()
 
 # If set to true in config, add timestamp to result files
-timestamp = start_timestamp if ini_handler.get('results','add_timestamp_to_files',bool) else ''
+files_timestamp = start_timestamp if ini_handler.get('results','add_timestamp_to_files',bool) else ''
 
 # Get model path, model name, save path, subsystem and input file path from config
 model_path = config['psat']['psat_model_path']
@@ -63,7 +63,7 @@ input_settings = [
 ]
 
 # If using input file for buses and generators and if input file is set, then modify model based on it
-if input_settings[0] and input_settings[2] and input_file_path != "":
+if input_settings[0] and input_settings[2] and input_file_path:
     model_modifier = ModelModifier(input_file_path, use_input_rules_to_whole_network)
     model_modifier.modify_model(subsystem)
 
@@ -75,7 +75,7 @@ if ini_handler.get('results','create_results_folder',bool):
     )
 
 # Initialize csv files handler
-csv = CsvFile(save_path, timestamp, config['results']['files_prefix'])
+csv = CsvFile(save_path, files_timestamp, config['results']['files_prefix'])
 
 # Calculate powerflow and save changed model as temporary model
 psat.calculate_powerflow()
@@ -101,11 +101,13 @@ csv.write_shunts_file( filtered_shunts )
 csv.write_trfs_file( filtered_transformers, ini_handler.get('calculations', 'transformer_ratio_margins', float) )
 
 # If any of input settings is true, create raport with found elements, input elements and model elements
-if True in input_settings:
+if True in input_settings and input_file_path:
+
+    raport_name = files_timestamp + "_raport.txt" if files_timestamp else "raport.txt"
     raport = RaportHandler(elements_lists.get_found_elements_dict(), 
         elements_lists.get_input_elements_dict(), elements_lists.get_model_elements_dict()).get_raport_data()
 
-    FileHandler.create_info_file( save_path/"raport.txt", raport)
+    FileHandler.create_info_file( str(save_path) + '/' + raport_name, raport)
 
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
 q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
@@ -219,6 +221,7 @@ duration = time_mgr.elapsed_time()
 psat.print(f"Elapsed time: {duration}")
 
 # Create info file of results
+info_file_name = files_timestamp + "_info.txt" if files_timestamp else "info.txt"
 info_text = f"""Model: {model_name}
 Subsystem: {subsystem}
 Date: {start_timestamp}
@@ -232,4 +235,4 @@ Minimum upper generated MW limit for generators: {ini_handler.get('calculations'
 Node KV +/- change: {ini_handler.get('calculations','node_kv_change_value', int)}
 Transformer ratio precission error margin: {ini_handler.get('calculations', 'transformer_ratio_margins', float)}
 Shunt minimum absolute mvar value: {ini_handler.get('calculations', 'shunt_minimal_abs_mvar_value', int)}"""
-FileHandler.create_info_file( save_path/"info.txt", info_text)
+FileHandler.create_info_file( str(save_path) + '/' + info_file_name, info_text)

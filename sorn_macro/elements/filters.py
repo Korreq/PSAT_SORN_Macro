@@ -96,7 +96,7 @@ class ElementsLists:
         found_transformers = []
         target_kv = {110, 220, 400}
         for transformer in transformers:
-            name = transformer.name
+            name = transformer.name.strip()
             in_service = (transformer.status != 0)
             movable_tap = (transformer.minratio != transformer.maxratio)
 
@@ -105,8 +105,11 @@ class ElementsLists:
                 if name not in self.model_elements["transformers"]:
                     self.model_elements["transformers"].append(name)
 
-                if name in filter_list:
-                    if in_service and movable_tap:
+                for filter_transformer in filter_list:
+                    if (
+                        filter_transformer["name"] in name and in_service and movable_tap and 
+                        int(filter_transformer.get("enabled", 1)) == 1
+                    ):
                         filtered_elements.append(transformer)
                 
                     if name not in self.found_elements["transformers"]:
@@ -153,9 +156,10 @@ class ElementsLists:
                 if name not in self.model_elements["shunts"]:
                     self.model_elements["shunts"].append(name)
 
-                if name in filter_list:
-                    filtered_elements.append(shunt)
-
+                for filter_shunt in filter_list:
+                    if name in filter_shunt["name"] and int(filter_shunt.get("enabled", 1)) == 1:
+                        filtered_elements.append(shunt)
+        
                     if name not in self.found_elements["shunts"]:
                         self.found_elements["shunts"].append(name)
             else:
