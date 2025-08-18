@@ -17,6 +17,7 @@ class ElementsLists:
         self.filtered_transformers = []
         self.filtered_shunts = []
         self.all_generators_in_buses = []
+        self.all_transformers_in_buses = []
 
         # Prepare input file structures if needed
         if self.use_input_file:
@@ -63,7 +64,7 @@ class ElementsLists:
                 for filter_bus in filter_list:
                     if filter_bus["name"] in name and zone == filter_bus.get("zone", 0):
 
-                        if in_service:
+                        if in_service and filter_bus.get("enabled", 1) == 1:
                             filtered_elements.append(bus)
                         
                         if filter_name not in self.found_elements["buses"]:
@@ -92,6 +93,7 @@ class ElementsLists:
             else []
         )
 
+        all_elements = []
         filtered_elements = []
         found_transformers = []
         target_kv = {110, 220, 400}
@@ -115,22 +117,25 @@ class ElementsLists:
                     if name not in self.found_elements["transformers"]:
                         self.found_elements["transformers"].append(name)
 
-            else:
-                # Filter transformers if basekv on both sides are in 110, 220, 400 and not the same. 
-                # Record every element found in the model if filter list is present
-                from_bus = self.psat.get_bus_data(transformer.frbus)
-                to_bus = self.psat.get_bus_data(transformer.tobus)
-                kv_mismatch = (from_bus.basekv != to_bus.basekv)
-                connects_key_kv = bool({from_bus.basekv, to_bus.basekv} & target_kv)
+            # Filter transformers if basekv on both sides are in 110, 220, 400 and not the same. 
+            # Record every element found in the model if filter list is present
+            from_bus = self.psat.get_bus_data(transformer.frbus)
+            to_bus = self.psat.get_bus_data(transformer.tobus)
+            kv_mismatch = (from_bus.basekv != to_bus.basekv)
+            connects_key_kv = bool({from_bus.basekv, to_bus.basekv} & target_kv)
 
-                if kv_mismatch and connects_key_kv:
-                    # Check connection to any previously filtered bus
-                    for bus in self.filtered_buses:
-                        if bus.name in (from_bus.name, to_bus.name) and name not in found_transformers and in_service and movable_tap:
+            if kv_mismatch and connects_key_kv:
+                # Check connection to any previously filtered bus
+                for bus in self.filtered_buses:
+                    if bus.name in (from_bus.name, to_bus.name) and name not in found_transformers and in_service and movable_tap:
+                        if filter_list:
+                            all_elements.append(transformer)
+                        else:
                             filtered_elements.append(transformer)
-                            found_transformers.append(name)
-                            break
+                        found_transformers.append(name)
+                        break
             
+        self.all_transformers_in_buses = all_elements
         self.filtered_transformers = filtered_elements
         return filtered_elements
 
@@ -220,7 +225,7 @@ class ElementsLists:
 
       
     def get_generators_with_buses(self):
-        '''Retrieve generators with their connected buses. If input file is used, label generators as "in_filter" or "outside_filter".'''
+        '''Retrieve generators with their connected buses.'''
         use_input = self.use_input_file and self.input_settings[2]
 
         # Pick the correct source of generators
@@ -230,11 +235,10 @@ class ElementsLists:
             else self.filtered_generators
         )
 
-        if use_input:
-            buses_of_filtered_generators = {
-                generator.bus
-                for generator in self.filtered_generators
-            } 
+        buses_of_filtered_generators = {
+            generator.bus
+            for generator in self.filtered_generators
+        } 
 
         buses_with_gens = defaultdict(list)
         for generator in generator_list:
@@ -246,7 +250,43 @@ class ElementsLists:
 
         return dict(buses_with_gens)
 
-     
+
+    def get_transformers_with_buses(self):
+        '''Retrieve transformers with their connected buses.'''
+        use_input = self.use_input_file and self.input_settings[1]  
+
+        # Pick the correct source of transformers
+        transformer_list = (
+            self.all_transformers_in_buses
+            if use_input
+            else self.filtered_transformers
+        )
+
+        lower_bus_number = higher_bus_number = None
+        buses_of_filtered_transformers = set()
+        for transformer in self.filtered_transformers:
+            lower_bus_number = min(transformer.frbus, transformer.tobus)
+            higher_bus_number = max(transformer.frbus, transformer.tobus)
+            buses_of_filtered_transformers.add((lower_bus_number, higher_bus_number))
+
+        buses_with_transformers = defaultdict(list)
+        for transformer in transformer_list:
+
+            lower_bus_number = min(transformer.frbus, transformer.tobus)
+            higher_bus_number = max(transformer.frbus, transformer.tobus)
+            buses_key = f"{lower_bus_number}-{higher_bus_number}"
+
+            for buses in buses_of_filtered_transformers:
+
+                if buses == (transformer.frbus, transformer.tobus):
+                    buses_with_transformers[buses_key].append([transformer, False])
+
+                elif buses == (transformer.tobus, transformer.frbus):
+                    buses_with_transformers[buses_key].append([transformer, True])
+
+        return dict(buses_with_transformers)
+
+
     def get_buses_base_kv(self):
         buses_kv = []
         for bus in self.filtered_buses:

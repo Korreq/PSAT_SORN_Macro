@@ -60,30 +60,56 @@ class ElementsFunctions:
         return [ generator_bus.number, "-", generator_bus.name[:-4].strip(), locale.format_string('%G',kv_difference) ]
 
 
-    def set_transformer_new_tap( self, transformer, transformer_ratio_margin=0.05 ):
-        beg_bus = self.psat.get_bus_data(transformer.frbus)
-        end_bus = self.psat.get_bus_data(transformer.tobus)
+    def set_transformer_new_tap( self, transformers, transformer_ratio_margin=0.05 ):
+        transformers_names = []
+        first_transformer_tap_difference = 0
 
-        trf_current_tap, trf_current, trf_max, trf_step = self.get_transformer_ratios(transformer, beg_bus.basekv, end_bus.basekv, transformer_ratio_margin)
+        for i in range(len(transformers)):
+            transformer = transformers[i][0]
+            reverse = transformers[i][1]
+ 
+            beg_bus = self.psat.get_bus_data(transformer.frbus)
+            end_bus = self.psat.get_bus_data(transformer.tobus)
 
-        # Change one tap down if possible, otherwise change tap up
-        if( trf_current + trf_step <= trf_max ):
-            transformer.fsratio += transformer.stepratio
-        else:
-            transformer.fsratio -= transformer.stepratio
+            trf_current_tap, trf_current, trf_max, trf_step = self.get_transformer_ratios(
+                transformer, beg_bus.basekv, end_bus.basekv, transformer_ratio_margin
+            )
 
-        self.psat.set_transformer_data(transformer)
-        self.psat.calculate_powerflow()
+            # Tap change direction logic
+            if reverse:
+                if trf_current + trf_step <= trf_max:
+                    transformer.fsratio += transformer.stepratio
+                else:
+                    transformer.fsratio -= transformer.stepratio
 
-        updated_transformer = self.psat.get_transformer_data( transformer.frbus, transformer.tobus, transformer.id, transformer.sec )
+            else:
+                if trf_current - trf_step >= 0:
+                    transformer.fsratio -= transformer.stepratio
+                else:
+                    transformer.fsratio += transformer.stepratio
+               
+            self.psat.set_transformer_data(transformer)
+            self.psat.calculate_powerflow()
 
-        #Get updated current tap 
-        trf_updated_current_tap = self.get_transformer_ratios(updated_transformer, beg_bus.basekv, 
-                                                              end_bus.basekv, transformer_ratio_margin)[0]
+            updated_transformer = self.psat.get_transformer_data( 
+                transformer.frbus, transformer.tobus, transformer.id, transformer.sec 
+            )
 
-        return [ transformer.frbus, transformer.tobus, transformer.name, trf_updated_current_tap - trf_current_tap ]
+            #Get updated current tap 
+            trf_updated_current_tap = self.get_transformer_ratios(
+                updated_transformer, beg_bus.basekv, end_bus.basekv, transformer_ratio_margin
+            )[0]
 
+            if i == 0:
+                first_transformer_tap_difference = trf_updated_current_tap - trf_current_tap
 
+            transformers_names.append( transformer.name )
+
+        first_transformer = transformers[0][0]
+        transformers_names = '#'.join(transformers_names.sort())
+        return [ first_transformer.frbus, first_transformer.tobus, transformers_names, first_transformer_tap_difference ]
+
+    
     def get_transformer_ratios( self, transformer, beg_bus_base_kv, end_bus_base_kv, transformer_ratio_margin, get_data_for_elements_file=False ):
         trf_from_side = transformer.fsratio * beg_bus_base_kv
         trf_to_side = transformer.tsratio * end_bus_base_kv

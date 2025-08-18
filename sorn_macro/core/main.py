@@ -90,6 +90,7 @@ filtered_shunts = elements_lists.get_shunts(ini_handler.get('calculations','shun
 filtered_transformers = elements_lists.get_transformers(subsystem)
 
 generators_with_buses = elements_lists.get_generators_with_buses()
+transformers_with_buses = elements_lists.get_transformers_with_buses()
 
 buses_base_kv = elements_lists.get_buses_base_kv()
 generators_base_mvar = elements_lists.get_generators_base_mvar()
@@ -146,10 +147,13 @@ for bus_number_key in generators_with_buses:
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
 
-# Iterate through each suitable transformer 
-for transformer in filtered_transformers:
+# Iterate through each bus combo that has suitable transformers connected
+for buses_key in transformers_with_buses:
 
-    row = elements_func.set_transformer_new_tap(transformer, ini_handler.get('calculations', 'transformer_ratio_margins', float) )
+# Iterate through each suitable transformer 
+#for transformer in filtered_transformers:
+
+    row = elements_func.set_transformer_new_tap(transformers_with_buses[ buses_key ], ini_handler.get('calculations', 'transformer_ratio_margins', float) )
 
     v_row = row.copy()
     q_row = row.copy()
