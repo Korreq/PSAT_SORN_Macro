@@ -252,7 +252,7 @@ class ElementsLists:
 
 
     def get_transformers_with_buses(self):
-        '''Retrieve transformers with their connected buses.'''
+        '''Retrieve transformers with their connected buses, sorted by transformer's name.'''
         use_input = self.use_input_file and self.input_settings[1]  
 
         # Pick the correct source of transformers
@@ -262,29 +262,27 @@ class ElementsLists:
             else self.filtered_transformers
         )
 
-        lower_bus_number = higher_bus_number = None
-        buses_of_filtered_transformers = set()
-        for transformer in self.filtered_transformers:
-            lower_bus_number = min(transformer.frbus, transformer.tobus)
-            higher_bus_number = max(transformer.frbus, transformer.tobus)
-            buses_of_filtered_transformers.add((lower_bus_number, higher_bus_number))
+        # Create a set of tuples with sorted bus numbers for each transformer
+        buses_of_filtered_transformers = set(
+            tuple(sorted((t.frbus, t.tobus)))
+            for t in self.filtered_transformers
+        )
 
         buses_with_transformers = defaultdict(list)
         for transformer in transformer_list:
+            buses_key_tuple = tuple(sorted((transformer.frbus, transformer.tobus)))
+            buses_key = f"{buses_key_tuple[0]}-{buses_key_tuple[1]}"
 
-            lower_bus_number = min(transformer.frbus, transformer.tobus)
-            higher_bus_number = max(transformer.frbus, transformer.tobus)
-            buses_key = f"{lower_bus_number}-{higher_bus_number}"
+            if buses_key_tuple in buses_of_filtered_transformers:
+                buses_with_transformers[buses_key].append(transformer)
 
-            for buses in buses_of_filtered_transformers:
+        # Sort each list of transformers by their names
+        sorted_buses_with_transformers = {
+            key: sorted(value, key=lambda t: t.name)
+            for key, value in buses_with_transformers.items()
+        }
 
-                if buses == (transformer.frbus, transformer.tobus):
-                    buses_with_transformers[buses_key].append([transformer, False])
-
-                elif buses == (transformer.tobus, transformer.frbus):
-                    buses_with_transformers[buses_key].append([transformer, True])
-
-        return dict(buses_with_transformers)
+        return dict(sorted_buses_with_transformers)
 
 
     def get_buses_base_kv(self):

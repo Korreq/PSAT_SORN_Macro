@@ -64,10 +64,10 @@ class ElementsFunctions:
         transformers_names = []
         first_transformer_tap_difference = 0
 
-        for i in range(len(transformers)):
-            transformer = transformers[i][0]
-            reverse = transformers[i][1]
- 
+        first_transformer = transformers[0]
+        first_beg_number = first_transformer.frbus
+
+        for i, transformer in enumerate(transformers):
             beg_bus = self.psat.get_bus_data(transformer.frbus)
             end_bus = self.psat.get_bus_data(transformer.tobus)
 
@@ -76,25 +76,30 @@ class ElementsFunctions:
             )
 
             # Tap change direction logic
-            if reverse:
+            if i > 0 and first_beg_number != transformer.frbus:
+                # Reverse direction
                 if trf_current + trf_step <= trf_max:
                     transformer.fsratio += transformer.stepratio
                 else:
                     transformer.fsratio -= transformer.stepratio
 
+                transformer_name = '!' + transformer.name
+
             else:
+                # Normal direction
                 if trf_current - trf_step >= 0:
                     transformer.fsratio -= transformer.stepratio
                 else:
                     transformer.fsratio += transformer.stepratio
-               
+
+                transformer_name = transformer.name
+       
             self.psat.set_transformer_data(transformer)
             self.psat.calculate_powerflow()
 
             updated_transformer = self.psat.get_transformer_data( 
                 transformer.frbus, transformer.tobus, transformer.id, transformer.sec 
             )
-
             #Get updated current tap 
             trf_updated_current_tap = self.get_transformer_ratios(
                 updated_transformer, beg_bus.basekv, end_bus.basekv, transformer_ratio_margin
@@ -103,11 +108,10 @@ class ElementsFunctions:
             if i == 0:
                 first_transformer_tap_difference = trf_updated_current_tap - trf_current_tap
 
-            transformers_names.append( transformer.name )
+            transformers_names.append( transformer_name )
 
-        first_transformer = transformers[0][0]
-        transformers_names = '#'.join(transformers_names.sort())
-        return [ first_transformer.frbus, first_transformer.tobus, transformers_names, first_transformer_tap_difference ]
+        transformers_names_str = '#'.join(transformers_names)
+        return [ first_transformer.frbus, first_transformer.tobus, transformers_names_str, first_transformer_tap_difference ]
 
     
     def get_transformer_ratios( self, transformer, beg_bus_base_kv, end_bus_base_kv, transformer_ratio_margin, get_data_for_elements_file=False ):
