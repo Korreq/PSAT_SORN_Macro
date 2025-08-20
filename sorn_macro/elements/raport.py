@@ -1,18 +1,51 @@
+from core.psat_functions import PsatFunctions
+
 class RaportHandler:
 
     def __init__(self, found_elements, input_elements, model_elements):
+        self.psat = PsatFunctions()
         self.found_elements = found_elements
         self.input_elements = input_elements
         self.model_elements = model_elements
 
-
+  
     def _get_missing_elements(self, source, reference):
         """Compare two dictionaries of elements and return a dictionary
-        with keys from the source and lists of items that are not in the reference."""
+        with keys from the source and lists of items that are not in the reference.
+        For buses, compare by station name and zone if flag is set."""
         missing = {key: [] for key in source}
         for key, items in source.items():
             ref_items = reference.get(key, [])
-            missing[key] = [item for item in items if item not in ref_items]
+
+            if key == "buses":
+                # Build set of (station_name, zone) from reference buses
+                ref_bus_keys = set()
+                for bus_entry in ref_items:
+                    if isinstance(bus_entry, int):  # model/found bus id
+                        bus = self.psat.get_bus_data(bus_entry)
+                        bus_name = bus.name[:-4].strip()
+                        station_name = bus_name[:3] + ''.join([c for c in bus_name[3:] if not c.isdigit()])
+                        bus_zone = str(bus.zone)
+                    else:  # input bus entry
+                        station_name, bus_zone = bus_entry.split("_")[:2]
+                    ref_bus_keys.add((station_name, bus_zone))
+
+                # Compare source buses by (station_name, zone)
+                for bus_entry in items:
+                    if isinstance(bus_entry, int):  # model/found bus id
+                        bus = self.psat.get_bus_data(bus_entry)
+                        bus_name = bus.name[:-4].strip()
+                        station_name = bus_name[:3] + ''.join([c for c in bus_name[3:] if not c.isdigit()])
+                        bus_zone = str(bus.zone)
+                    else:  # input bus entry
+                        station_name, bus_zone = bus_entry.split("_")[:2]
+
+                    text = f"Name: {station_name} Zone: {bus_zone}"  
+                    if (station_name, bus_zone) not in ref_bus_keys and text not in missing[key]:
+                        missing[key].append(f"Name: {station_name} Zone: {bus_zone}")
+            else:
+                # Default comparison for other element types
+                missing[key] = [item for item in items if item not in ref_items]
         return missing
 
 

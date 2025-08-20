@@ -55,26 +55,28 @@ class ElementsLists:
         for bus in buses:
             # Normalize bus name by trimming last 4 characters and whitespaces
             name = bus.name[:-4].strip()
+            station_name = name[:3] + ''.join([c for c in name[3:] if not c.isdigit()])
             in_service = (bus.type != 4)
             zone = bus.zone
-            filter_name = f'{name[:3]}**{zone}'
+            id = bus.number
 
             # Filter buses by input file if filter list is present. Record elements from the model found in input file.
             if filter_list:
                 for filter_bus in filter_list:
-                    if filter_bus["name"] in name and zone == filter_bus.get("zone", 0):
+                    if filter_bus["name"] == station_name and zone == filter_bus.get("zone", 0):
 
-                        if in_service and filter_bus.get("enabled", 1) == 1:
-                            filtered_elements.append(bus)
+                        if id not in self.found_elements["buses"]:
+
+                            if in_service and filter_bus.get("enabled", 1) == 1:
+                                filtered_elements.append(bus)
                         
-                        if filter_name not in self.found_elements["buses"]:
-                            self.found_elements["buses"].append(filter_name)
+                            self.found_elements["buses"].append(id)
                 
             # Filter buses by it's basekv value. Record every element found in the model if filter list is present
             if bus.basekv in (110, 220, 400):
                 if filter_list:
-                    if filter_name not in self.model_elements["buses"]:
-                        self.model_elements["buses"].append(filter_name)
+                    if id not in self.model_elements["buses"]:
+                        self.model_elements["buses"].append(id)
 
                 elif in_service:
                     filtered_elements.append(bus)
@@ -108,15 +110,14 @@ class ElementsLists:
                     self.model_elements["transformers"].append(name)
 
                 for filter_transformer in filter_list:
-                    if (
-                        filter_transformer["name"] in name and in_service and movable_tap and 
-                        int(filter_transformer.get("enabled", 1)) == 1
-                    ):
-                        filtered_elements.append(transformer)
-                
-                    if name not in self.found_elements["transformers"]:
-                        self.found_elements["transformers"].append(name)
 
+                    if filter_transformer["name"] in name and name not in self.found_elements["transformers"]:
+
+                        if in_service and movable_tap and int(filter_transformer.get("enabled", 1)) == 1:
+                            filtered_elements.append(transformer)
+
+                        self.found_elements["transformers"].append(name)
+                   
             # Filter transformers if basekv on both sides are in 110, 220, 400 and not the same. 
             # Record every element found in the model if filter list is present
             from_bus = self.psat.get_bus_data(transformer.frbus)
@@ -162,11 +163,12 @@ class ElementsLists:
                     self.model_elements["shunts"].append(name)
 
                 for filter_shunt in filter_list:
-                    if name in filter_shunt["name"] and int(filter_shunt.get("enabled", 1)) == 1:
-                        filtered_elements.append(shunt)
-        
-                    if name not in self.found_elements["shunts"]:
+                    if name in filter_shunt["name"] and name not in self.found_elements["shunts"]:
+                        if int(filter_shunt.get("enabled", 1)) == 1:
+                            filtered_elements.append(shunt)
+
                         self.found_elements["shunts"].append(name)
+
             else:
                 for bus in self.filtered_buses:
                     if bus.name == shunt_bus.name and rating_ok:
@@ -204,12 +206,11 @@ class ElementsLists:
                     if filter_list:
                         
                         for filter_gen in filter_list:
-                            if eq_name in filter_gen["name"]:
+                            if eq_name in filter_gen["name"] and eq_name not in self.found_elements["generators"]:
                                 if in_service and generator_bus.type == 2:
                                     filtered_elements.append(generator)
 
-                                if eq_name not in self.found_elements["generators"]:
-                                    self.found_elements["generators"].append(eq_name)
+                                self.found_elements["generators"].append(eq_name)
 
                         if in_service:
                             all_elements.append(generator)
@@ -333,7 +334,7 @@ class ElementsLists:
         input_transformers = []
 
         for bus in self.input_dict.get("buses", []):
-            converted_name = f'{bus["name"]}**{bus.get("zone", "?")}'
+            converted_name = bus["name"] + "_" + str(bus["zone"])  
             input_buses.append(converted_name)
 
         for generator in self.input_dict.get("generators", []):
