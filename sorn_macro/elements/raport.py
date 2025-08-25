@@ -24,7 +24,12 @@ class RaportHandler:
                     if isinstance(bus_entry, int):  # model/found bus id
                         bus = self.psat.get_bus_data(bus_entry)
                         bus_name = bus.name[:-4].strip()
-                        station_name = bus_name[:3] + ''.join([c for c in bus_name[3:] if not c.isdigit()])
+                        # Assumes station name is first 3 characters plus any charcters until first digit
+                        station_name = bus_name[:3]
+                        for c in bus_name[3:]:
+                            if c.isdigit():
+                                break
+                            station_name += c
                         bus_zone = str(bus.zone)
                     else:  # input bus entry
                         station_name, bus_zone = bus_entry.split("_")[:2]
@@ -35,7 +40,12 @@ class RaportHandler:
                     if isinstance(bus_entry, int):  # model/found bus id
                         bus = self.psat.get_bus_data(bus_entry)
                         bus_name = bus.name[:-4].strip()
-                        station_name = bus_name[:3] + ''.join([c for c in bus_name[3:] if not c.isdigit()])
+                        # Assumes station name is first 3 characters plus any charcters until first digit
+                        station_name = bus_name[:3]
+                        for c in bus_name[3:]:
+                            if c.isdigit():
+                                break
+                            station_name += c
                         bus_zone = str(bus.zone)
                     else:  # input bus entry
                         station_name, bus_zone = bus_entry.split("_")[:2]

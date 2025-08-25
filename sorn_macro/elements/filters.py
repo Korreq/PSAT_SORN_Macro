@@ -55,7 +55,12 @@ class ElementsLists:
         for bus in buses:
             # Normalize bus name by trimming last 4 characters and whitespaces
             name = bus.name[:-4].strip()
-            station_name = name[:3] + ''.join([c for c in name[3:] if not c.isdigit()])
+            # Assumes station name is first 3 characters plus any charcters until first digit
+            station_name = name[:3]
+            for c in name[3:]:
+                if c.isdigit():
+                    break
+                station_name += c
             in_service = (bus.type != 4)
             zone = bus.zone
             id = bus.number
@@ -67,7 +72,7 @@ class ElementsLists:
 
                         if id not in self.found_elements["buses"]:
 
-                            if in_service and filter_bus.get("enabled", 1) == 1:
+                            if in_service and int(filter_bus.get("enabled", 1)) == 1:
                                 filtered_elements.append(bus)
                         
                             self.found_elements["buses"].append(id)

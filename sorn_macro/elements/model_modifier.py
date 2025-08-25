@@ -17,10 +17,35 @@ class ModelModifier:
         generators = self.psat.get_element_list("generator", subsys)
 
         generator_filter_list = self.input_dict.get("generators", [])        
-
+        bus_filter_list = self.input_dict.get("buses", [])
 
         for bus in buses:
             generators_in_bus = []
+
+            # Normalize bus name by trimming last 4 characters and whitespaces
+            bus_name = bus.name[:-4].strip()
+            # Assumes station name is first 3 characters plus any charcters until first digit
+            station_name = bus_name[:3]
+            for c in bus_name[3:]:
+                if c.isdigit():
+                    break
+                station_name += c
+            zone = bus.zone
+
+            if not self.change_for_whole_network:
+                found_bus = False
+
+                for bus_filter in bus_filter_list:
+                        
+                        if int(bus_filter.get("enabled", 1)) == 0:
+                            continue
+
+                        if bus_filter["name"] == station_name and zone == bus_filter.get("zone", 0):
+                            found_bus = True
+                            break
+
+                if not found_bus:
+                    continue
 
             for generator in generators:
                 found_generator = False
@@ -39,7 +64,7 @@ class ModelModifier:
                                 label = "static"
                                 break
 
-                    if not found_generator and self.change_for_whole_network:
+                    if not found_generator:
                         label = "static"
                             
                     generators_in_bus.append([generator, label])

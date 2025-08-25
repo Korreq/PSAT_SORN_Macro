@@ -230,11 +230,12 @@ info_text = f"""Model: {model_name}
 Subsystem: {subsystem}
 Date: {start_timestamp}
 Duration: {duration}\n
-Using input file for: 
+Input file settings: 
 buses: {input_settings[0]}
 transformers: {input_settings[1]}
 generators: {input_settings[2]}
-shunts: {input_settings[3]}\n
+shunts: {input_settings[3]}
+use input rules to whole network: {use_input_rules_to_whole_network}\n
 Minimum upper generated MW limit for generators: {ini_handler.get('calculations','minimum_max_mw_generators',int)}
 Node KV +/- change: {ini_handler.get('calculations','node_kv_change_value', int)}
 Transformer ratio precission error margin: {ini_handler.get('calculations', 'transformer_ratio_margins', float)}

@@ -9,10 +9,10 @@ class TimeManager:
         self._start = time.perf_counter()
 
     @staticmethod
-    def get_current_utc_time(fmt: str = "%Y-%m-%d--%H-%M-%S") -> str:
+    def get_current_utc_time(fmt: str = "%Y-%m-%d--%H-%M-%S", utc = False) -> str:
         """Return the current UTC time as a formatted string. 
         Default time format is: 2025-01-01--01-00-00 ."""
-        return datetime.now(timezone.utc).strftime(fmt)
+        return datetime.now(timezone.utc).strftime(fmt) if utc else datetime.now().strftime(fmt)
 
 
     def elapsed_time(self) -> str:

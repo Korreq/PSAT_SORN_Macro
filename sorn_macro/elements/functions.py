@@ -68,8 +68,10 @@ class ElementsFunctions:
         first_beg_number = first_transformer.frbus
 
         for i, transformer in enumerate(transformers):
+            transformer_name = transformer.name
             beg_bus = self.psat.get_bus_data(transformer.frbus)
             end_bus = self.psat.get_bus_data(transformer.tobus)
+
 
             trf_current_tap, trf_current, trf_max, trf_step = self.get_transformer_ratios(
                 transformer, beg_bus.basekv, end_bus.basekv, transformer_ratio_margin
@@ -83,16 +85,12 @@ class ElementsFunctions:
                 else:
                     transformer.fsratio -= transformer.stepratio
 
-                transformer_name = '!' + transformer.name
-
             else:
                 # Normal direction
                 if trf_current - trf_step >= 0:
                     transformer.fsratio -= transformer.stepratio
                 else:
                     transformer.fsratio += transformer.stepratio
-
-                transformer_name = transformer.name
        
             self.psat.set_transformer_data(transformer)
             self.psat.calculate_powerflow()
