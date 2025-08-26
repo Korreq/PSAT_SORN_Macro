@@ -22,6 +22,7 @@ from handlers.file_handler import FileHandler
 from handlers.ini_handler import IniHandler
 
 from utilities.time_manager import TimeManager
+from utilities.import_from_epc import ImportFromEPC
 
 #Set locale based on system's locale
 locale.setlocale(locale.LC_ALL, '')
@@ -37,6 +38,7 @@ sys.path.append( config['psat']['psat_installation_path'] + "bin/python" )
 psat = PsatFunctions()
 elements_func = ElementsFunctions()
 time_mgr = TimeManager()
+importer = ImportFromEPC()
 
 start_timestamp = TimeManager.get_current_utc_time()
 
@@ -61,6 +63,9 @@ input_settings = [
     ini_handler.get('input', 'use_input_for_generators', bool),
     ini_handler.get('input', 'use_input_for_shunts', bool)
 ]
+
+# Convert model from epc to pfb if needed
+importer.import_epc(model_path, model_name)
 
 # If using input file for buses and generators and if input file is set, then modify model based on it
 if input_settings[0] and input_settings[2] and input_file_path:

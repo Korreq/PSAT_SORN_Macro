@@ -22,4 +22,6 @@ if __name__ == '__main__':
     model_with_path = os.path.join(config['psat']['psat_model_path'], config['psat']['psat_model_name'])
     main_path = os.path.join(os.path.dirname(os.path.dirname( __file__ )), 'core', 'main.py')
 
+    #os.system(f'cd {psat} && PSAT C:/Users/ien/Documents/Github/PSAT_SORN_Macro/sorn_macro/utilities/import_from_epc.py python ')
+
     os.system(f'cd {psat} && PSAT {model_with_path} autopython {main_path} ')

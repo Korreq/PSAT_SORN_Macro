@@ -79,6 +79,9 @@ class PsatFunctions:
     def calculate_powerflow(self):
         psat_command('Solve', self.error) # type: ignore
 
+    def import_epc(self, full_path):
+        psat_command(f'Import:"{full_path}";GE EPC 21', self.error) # type: ignore
+        self.save_as_new_model(full_path.replace('.epc', '.pfb'))
 
     @staticmethod
     def print(message: str):

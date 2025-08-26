@@ -11,7 +11,8 @@ class FileHandler:
         dir_path = Path(directory)
         for file in dir_path.glob(f"*{substring}*"):
             try:
-                file.unlink()
+                if file.name != "tmp.pfb":
+                    file.unlink()
             except Exception:
                 # skip if file can't be deleted
                 pass
@@ -46,3 +47,14 @@ class FileHandler:
         except Exception:
             # skip on failure
             pass
+
+    @staticmethod
+    def find_file_in_directory(directory: str | Path, fileName: str):
+        """Find first file with matching name within `directory`."""
+        found_files = []
+        dir_path = Path(directory)
+        epc_filename = fileName if fileName.endswith('.epc') else fileName.split('.')[0] + '.epc'
+        for file in dir_path.glob(f"{epc_filename}"):
+            found_files.append( str(file) )
+        
+        return found_files.sort()[0] if found_files else None
