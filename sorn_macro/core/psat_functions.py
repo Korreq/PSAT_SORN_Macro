@@ -64,7 +64,7 @@ class PsatFunctions:
         '''Close current model without saving, open new one in given path'''
         psat_command('CloseProject:NoSave', self.error) # type: ignore
         psat_command(f'OpenPowerflow:"{full_path}"', self.error) # type: ignore
-
+        self.calculate_powerflow()
     
     def close_model(self):
         '''Close current model without saving'''

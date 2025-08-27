@@ -67,6 +67,8 @@ input_settings = [
 # Convert model from epc to pfb if needed
 import_message = importer.import_epc(model_path, model_name)
 
+psat.calculate_powerflow()
+
 # If using input file for buses and generators and if input file is set, then modify model based on it
 if input_settings[0] and input_settings[2] and input_file_path:
     model_modifier = ModelModifier(input_file_path, use_input_rules_to_whole_network)

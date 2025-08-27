@@ -32,6 +32,10 @@ class ModelModifier:
                 station_name += c
             zone = bus.zone
 
+            # Skip if bus is in area 99 (usually used for external grid)
+            if bus.area == 99:
+                continue
+
             if not self.change_for_whole_network:
                 found_bus = False
 

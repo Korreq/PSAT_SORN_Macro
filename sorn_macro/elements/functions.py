@@ -40,7 +40,7 @@ class ElementsFunctions:
             generator_bus = self.psat.get_bus_data( generator_bus.number )
          
             # Use kv change, that have higger difference value  
-            if abs(  ( generator_bus.basekv * generator_bus.vmag )  - bus_kv ) <= abs( kv_difference ):
+            if abs(  ( generator_bus.basekv * generator_bus.vmag ) - bus_kv ) <= abs( kv_difference ):
                 self.psat.load_model(tmp_model_path)
 
                 # Getting new kv change from base value and calculated bus kv
