@@ -29,6 +29,9 @@ class ElementsFunctions:
             kv_difference = ( generator_bus.basekv * generator_bus.vmag ) - bus_kv
             self.psat.load_model(tmp_model_path)
 
+            # Get generator bus with new calculated values
+            generator_bus = self.psat.get_bus_data( generator_bus_number )
+
             # Getting new kv change from base value and calculated bus kv
             changed_kv_vmag, bus_kv = self.get_bus_changed_kv_vmag( generator_bus, - node_kv_change_value )
 
@@ -43,6 +46,9 @@ class ElementsFunctions:
             if abs(  ( generator_bus.basekv * generator_bus.vmag ) - bus_kv ) <= abs( kv_difference ):
                 self.psat.load_model(tmp_model_path)
 
+                # Get generator bus with new calculated values
+                generator_bus = self.psat.get_bus_data( generator_bus_number )
+
                 # Getting new kv change from base value and calculated bus kv
                 changed_kv_vmag, bus_kv = self.get_bus_changed_kv_vmag( generator_bus, node_kv_change_value )
 
@@ -54,7 +60,7 @@ class ElementsFunctions:
                 generator_bus = self.psat.get_bus_data( generator_bus.number )
 
         # Calculate bus new kv and it's kv change from base value 
-        kv_difference = ( generator_bus.basekv * generator_bus.vmag )  - bus_kv
+        kv_difference = ( generator_bus.basekv * generator_bus.vmag ) - bus_kv
 
         # Return generator's bus number, generator's bus name and it's bus kv difference in array form
         return [ generator_bus.number, "-", generator_bus.name[:-4].strip(), locale.format_string('%G',kv_difference) ]
