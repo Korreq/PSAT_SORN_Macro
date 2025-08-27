@@ -65,7 +65,7 @@ input_settings = [
 ]
 
 # Convert model from epc to pfb if needed
-importer.import_epc(model_path, model_name)
+import_message = importer.import_epc(model_path, model_name)
 
 # If using input file for buses and generators and if input file is set, then modify model based on it
 if input_settings[0] and input_settings[2] and input_file_path:
@@ -236,11 +236,12 @@ Subsystem: {subsystem}
 Date: {start_timestamp}
 Duration: {duration}\n
 Input file settings: 
-buses: {input_settings[0]}
-transformers: {input_settings[1]}
-generators: {input_settings[2]}
-shunts: {input_settings[3]}
-use input rules to whole network: {use_input_rules_to_whole_network}\n
+Buses: {input_settings[0]}
+Transformers: {input_settings[1]}
+Generators: {input_settings[2]}
+Shunts: {input_settings[3]}
+Use input rules to whole network: {use_input_rules_to_whole_network}\n
+Import message: {import_message}\n
 Minimum upper generated MW limit for generators: {ini_handler.get('calculations','minimum_max_mw_generators',int)}
 Node KV +/- change: {ini_handler.get('calculations','node_kv_change_value', int)}
 Transformer ratio precission error margin: {ini_handler.get('calculations', 'transformer_ratio_margins', float)}

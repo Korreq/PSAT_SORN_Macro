@@ -12,4 +12,6 @@ class ImportFromEPC:
         file_path = FileHandler.find_file_in_directory(directory, model_name)
         if file_path:
             self.psat.import_epc(file_path)
-            return file_path.replace('.epc', '.pfb')
+            return f"Updated pfb file with: {file_path}"
+
+        return f"Used original file: {model_name}"

@@ -57,4 +57,5 @@ class FileHandler:
         for file in dir_path.glob(f"{epc_filename}"):
             found_files.append( str(file) )
         
-        return found_files.sort()[0] if found_files else None
+        found_files.sort()
+        return found_files[0] if found_files else None
