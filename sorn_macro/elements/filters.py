@@ -212,7 +212,7 @@ class ElementsLists:
                         
                         for filter_gen in filter_list:
                             if eq_name in filter_gen["name"] and eq_name not in self.found_elements["generators"]:
-                                if in_service and generator_bus.type == 2:
+                                if in_service and generator_bus.type in (2, 3):
                                     filtered_elements.append(generator)
 
                                 self.found_elements["generators"].append(eq_name)
@@ -220,7 +220,7 @@ class ElementsLists:
                         if in_service:
                             all_elements.append(generator)
 
-                    elif rating_ok and in_service and generator_bus.type == 2:
+                    elif rating_ok and in_service and generator_bus.type in (2, 3):
                         filtered_elements.append(generator)
 
                     break

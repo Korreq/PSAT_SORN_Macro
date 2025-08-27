@@ -54,6 +54,7 @@ input_file_path = config['input']['input_file_path']
 
 minimum_max_mw_generated = ini_handler.get('calculations','minimum_max_mw_generators',int)
 use_input_rules_to_whole_network = ini_handler.get('input', 'use_input_rules_to_whole_network', bool)
+used_grid_area_number = ini_handler.get('input', 'used_grid_area_number', int)
 
 tmp_model = "tmp.pfb"
 
@@ -71,7 +72,7 @@ psat.calculate_powerflow()
 
 # If using input file for buses and generators and if input file is set, then modify model based on it
 if input_settings[0] and input_settings[2] and input_file_path:
-    model_modifier = ModelModifier(input_file_path, use_input_rules_to_whole_network)
+    model_modifier = ModelModifier(input_file_path, used_grid_area_number, use_input_rules_to_whole_network)
     model_modifier.modify_model(subsystem)
 
 # If set to true in config, create a results folder

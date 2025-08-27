@@ -3,13 +3,13 @@ from handlers.json_handler import JsonHandler
 
 
 class ModelModifier:
-    def __init__(self, input_file_path, change_for_whole_network: bool = False):
+    def __init__(self, input_file_path, changed_area_number, change_for_whole_network: bool = False):
         self.psat = PsatFunctions()
         self.json = JsonHandler(input_file_path)
 
         self.input_dict = self.json.get_input_dict()
         self.change_for_whole_network = change_for_whole_network
-
+        self.changed_area_number = changed_area_number
 
     def modify_model(self, subsys: str):
         '''Modify the model based on the input dictionary and settings.'''        
@@ -32,9 +32,10 @@ class ModelModifier:
                 station_name += c
             zone = bus.zone
 
-            # Skip if bus is in area 99 (usually used for external grid)
-            if bus.area == 99:
-                continue
+            # Skip if bus is outside of the changed area
+            if self.changed_area_number is not None:
+                if bus.area != self.changed_area_number:
+                    continue
 
             if not self.change_for_whole_network:
                 found_bus = False
