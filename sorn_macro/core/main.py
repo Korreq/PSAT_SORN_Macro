@@ -1,8 +1,11 @@
 """
+This script is used to run PSAT SORN Macro.
+
     Start this script by running run.py in terminal from sorn_macro directory:
         python scripts/run.py        
 """
 
+# Import needed libraries
 import locale
 import os
 import sys
@@ -10,6 +13,7 @@ import sys
 # Add sorn_macro directory to system path to import modules
 sys.path.append(os.environ["SORN_WORKING_DIRECTORY"] + '/sorn_macro')
 
+# Import needed modules
 from core.psat_functions import PsatFunctions
 
 from elements.filters import ElementsLists
@@ -35,6 +39,7 @@ config = ini_handler.get_config_file()
 #Add psat isntall loacation to enviromental variables
 sys.path.append( config['psat']['psat_installation_path'] + "bin/python" )
 
+# Initialize needed classes
 psat = PsatFunctions()
 elements_func = ElementsFunctions()
 time_mgr = TimeManager()
@@ -45,7 +50,7 @@ start_timestamp = TimeManager.get_current_utc_time()
 # If set to true in config, add timestamp to result files
 files_timestamp = start_timestamp if ini_handler.get('results','add_timestamp_to_files',bool) else ''
 
-# Get model path, model name, save path, subsystem and input file path from config
+# Get settings from config file
 model_path = config['psat']['psat_model_path']
 model_name = config['psat']['psat_model_name']
 save_path = config['results']['results_save_path']
@@ -65,9 +70,8 @@ input_settings = [
     ini_handler.get('input', 'use_input_for_shunts', bool)
 ]
 
-# Convert model from epc to pfb if needed
+# Convert model from epc to pfb if needed and calculate initial powerflow
 import_message = importer.import_epc(model_path, model_name)
-
 psat.calculate_powerflow()
 
 # If using input file for buses and generators and if input file is set, then modify model based on it
@@ -97,27 +101,32 @@ filtered_generators = elements_lists.get_generators(minimum_max_mw_generated, su
 filtered_shunts = elements_lists.get_shunts(ini_handler.get('calculations','shunt_minimal_abs_mvar_value',int), subsystem)
 filtered_transformers = elements_lists.get_transformers(subsystem)
 
+# Get dictionaries of elements with connected buses
 generators_with_buses = elements_lists.get_generators_with_buses()
 transformers_with_buses = elements_lists.get_transformers_with_buses()
 
+# Get base kv and mvar values of buses and generators
 buses_base_kv = elements_lists.get_buses_base_kv()
 generators_base_mvar = elements_lists.get_generators_base_mvar()
 
-# Write filtered elements to csv files
+# Write found elements to csv files
 csv.write_buses_file( filtered_buses )
 csv.write_gens_file( filtered_generators )
 csv.write_shunts_file( filtered_shunts )
 csv.write_trfs_file( filtered_transformers, ini_handler.get('calculations', 'transformer_ratio_margins', float) )
 
-# If any of input settings is true, create raport with found elements, input elements and model elements
+# If any of input settings is true, create raport with elements not found in model and in input file
 if True in input_settings and input_file_path:
-
     raport_name = files_timestamp + "_raport.txt" if files_timestamp else "raport.txt"
-    raport = RaportHandler(elements_lists.get_found_elements_dict(), 
-        elements_lists.get_input_elements_dict(), elements_lists.get_model_elements_dict()).get_raport_data()
+    raport = RaportHandler(
+        elements_lists.get_found_elements_dict(), 
+        elements_lists.get_input_elements_dict(), 
+        elements_lists.get_model_elements_dict()
+    ).get_raport_data()
 
     FileHandler.create_info_file( str(save_path) + '/' + raport_name, raport)
 
+# Initialize headers and rows for result files
 v_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
 q_header = ['From_bus_ID', 'To_bus_ID', 'Elements', 'Difference']
 v_rows, q_rows, tmp_row, tmp_header = [], [], [], []
@@ -132,6 +141,7 @@ for bus_number_key in generators_with_buses:
     v_row = row.copy()
     q_row = row.copy()
     
+    # Get updated elements lists
     updated_generators = elements_lists.update_filtered_generators()
     updated_buses = elements_lists.update_filtered_buses()
 
@@ -158,14 +168,13 @@ for bus_number_key in generators_with_buses:
 # Iterate through each bus combo that has suitable transformers connected
 for buses_key in transformers_with_buses:
 
-# Iterate through each suitable transformer 
-#for transformer in filtered_transformers:
-
+    # Try to change tap up or down for transformers connected to the same bus combo, recalculate power flow and return row with from bus number, to bus number , transformers' names, change difference
     row = elements_func.set_transformer_new_tap(transformers_with_buses[ buses_key ], ini_handler.get('calculations', 'transformer_ratio_margins', float) )
 
     v_row = row.copy()
     q_row = row.copy()
 
+    # Get updated elements lists
     updated_generators = elements_lists.update_filtered_generators()
     updated_buses = elements_lists.update_filtered_buses()
 
@@ -190,7 +199,7 @@ for shunt in filtered_shunts:
     v_row = []
     q_row = []
 
-    # Set fliped shunt status 
+    # Set shunt status to opposite, recalculate power flow. 
     old_shunt_status = shunt.status
     shunt.status = int( not shunt.status )
     psat.set_fixed_shunt_data(shunt)
@@ -199,9 +208,11 @@ for shunt in filtered_shunts:
     # Get updated shunt
     shunt = psat.get_fixed_shunt_data(shunt.bus, shunt.id)
 
+    # Fill begining of row with bus number, shunt name and change difference
     v_row = [ shunt.bus, "-", shunt.eqname, shunt.status - old_shunt_status ]
     q_row = [ shunt.bus, "-", shunt.eqname, shunt.status - old_shunt_status ]
 
+    # Get updated elements lists
     updated_generators = elements_lists.update_filtered_generators()
     updated_buses = elements_lists.update_filtered_buses()
 
@@ -213,24 +224,23 @@ for shunt in filtered_shunts:
     tmp_row = elements_func.get_changed_buses_results(updated_buses, buses_base_kv, 0)[0]
     v_row.extend( tmp_row )
    
-    # Add transformer's changed row to v_rows and q_rows  
+    # Add shunt's changed row to v_rows and q_rows  
     v_rows.append(v_row)
     q_rows.append(q_row)
 
     # Load temporary model
     psat.load_model(model_path + '/' + tmp_model)
 
-# Save filled rows and headers to corresponding result files
+# Save rows and headers to corresponding result files
 csv.write_to_file("v_sensitivity", v_header, v_rows)
 csv.write_to_file("q_sensitivity", q_header, q_rows)
 
-# Close model and delete all temporary model files
+# Close model and delete all temporary model files except temporary model
 psat.close_model()
 FileHandler.delete_files_from_directory(model_path,"tmp")
 
-# Show whole duration of program run
+# Calculate total script duration
 duration = time_mgr.elapsed_time()
-psat.print(f"Elapsed time: {duration}")
 
 # Create info file of results
 info_file_name = files_timestamp + "_info.txt" if files_timestamp else "info.txt"
@@ -243,7 +253,8 @@ Buses: {input_settings[0]}
 Transformers: {input_settings[1]}
 Generators: {input_settings[2]}
 Shunts: {input_settings[3]}
-Use input rules to whole network: {use_input_rules_to_whole_network}\n
+Use input rules to whole network: {use_input_rules_to_whole_network}
+Used grid area number: {used_grid_area_number}\n
 Import message: {import_message}\n
 Minimum upper generated MW limit for generators: {ini_handler.get('calculations','minimum_max_mw_generators',int)}
 Node KV +/- change: {ini_handler.get('calculations','node_kv_change_value', int)}

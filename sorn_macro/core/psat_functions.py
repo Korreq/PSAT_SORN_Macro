@@ -61,7 +61,7 @@ class PsatFunctions:
 
     
     def load_model(self, full_path):
-        '''Close current model without saving, open new one in given path'''
+        '''Close current model without saving, open new one in given path and calculate powerflow'''
         psat_command('CloseProject:NoSave', self.error) # type: ignore
         psat_command(f'OpenPowerflow:"{full_path}"', self.error) # type: ignore
         self.calculate_powerflow()
@@ -80,6 +80,7 @@ class PsatFunctions:
         psat_command('Solve', self.error) # type: ignore
 
     def import_epc(self, full_path):
+        '''Import .epc model and save it in the same path as .pfb model'''
         psat_command(f'Import:"{full_path}";GE EPC 21', self.error) # type: ignore
         self.save_as_new_model(full_path.replace('.epc', '.pfb'))
 

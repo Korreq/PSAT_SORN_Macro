@@ -8,7 +8,8 @@ class ImportFromEPC:
        
 
     def import_epc(self, directory: str, model_name: str):
-        """Import an EPC file from the specified directory and convert it to PFB format."""
+        ''' Import an EPC file from the specified directory and convert it to PFB format. '''
+        
         file_path = FileHandler.find_file_in_directory(directory, model_name)
         if file_path:
             self.psat.import_epc(file_path)

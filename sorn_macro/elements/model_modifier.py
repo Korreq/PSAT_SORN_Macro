@@ -12,7 +12,8 @@ class ModelModifier:
         self.changed_area_number = changed_area_number
 
     def modify_model(self, subsys: str):
-        '''Modify the model based on the input dictionary and settings.'''        
+        '''Modify the model based on the input dictionary and settings.'''   
+
         buses = self.psat.get_element_list("bus", subsys)
         generators = self.psat.get_element_list("generator", subsys)
 
@@ -37,6 +38,7 @@ class ModelModifier:
                 if bus.area != self.changed_area_number:
                     continue
 
+            # If not using rule for changing for whole network skip all buses not found or disabled in filter file
             if not self.change_for_whole_network:
                 found_bus = False
 
@@ -78,6 +80,8 @@ class ModelModifier:
             if generators_in_bus and all(label == "static" for _, label in generators_in_bus):
                 bus.type = 1
                 self.psat.set_bus_data(bus)
+                
+            # Else change mvar min and max to current mvar value to block generator's regulation
             else:
                 for generator, label in generators_in_bus:
                     if label == "static":

@@ -4,18 +4,20 @@ from pathlib import Path
 
 
 class IniHandler:
-    """Load an INI file and retrieve typed values or the entire config as dicts."""
+    ''' Load an INI file and retrieve typed values or the entire config as dicts. '''
 
     def __init__(self, ini_file: str):
         path = Path(ini_file)
         if not path.exists():
             raise FileNotFoundError(f"{ini_file} not found")
+        
         self.parser = ConfigParser()
         self.parser.read(path)
 
 
     def get( self, section: str, option: str, cast: Type = str ):
-        """Return a value from [section] option, cast to str, bool, int, or float."""
+        ''' Return a value from [section] option, cast to str, bool, int, or float. '''
+
         cast_map: Dict[Type, Any] = {
             str: self.parser.get,
             bool: self.parser.getboolean,
@@ -35,5 +37,6 @@ class IniHandler:
  
 
     def get_config_file(self):
-        """Return all sections and their options as nested dictionaries."""
+        ''' Return all sections and their options as nested dictionaries. '''
+
         return self.parser

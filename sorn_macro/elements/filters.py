@@ -41,10 +41,16 @@ class ElementsLists:
                 "shunts": []               
             }
 
+
     def get_buses(self, subsys):
         '''Retrieve and filter bus elements from given model in given subsystem. Can filter buses based on input file or 
         exclude buses with base kv other than 110, 220 and 400.'''
+        
+        # Get all buses from model from specified subsystem
         buses = self.psat.get_element_list("bus", subsys)
+        
+        # Use input list for buses, if corresponding setting is set in configuration file 
+        # and input file for buses is not empty
         filter_list = (
             self.input_dict.get("buses", [])
             if self.use_input_file and self.input_settings[0]
@@ -61,6 +67,7 @@ class ElementsLists:
                 if c.isdigit():
                     break
                 station_name += c
+            
             in_service = (bus.type != 4)
             zone = bus.zone
             id = bus.number
@@ -68,6 +75,8 @@ class ElementsLists:
             # Filter buses by input file if filter list is present. Record elements from the model found in input file.
             if filter_list:
                 for filter_bus in filter_list:
+                    # If station name from input dictionary is same as station_name 
+                    # and zone is same as in input dictionary( If not found assume 0 )
                     if filter_bus["name"] == station_name and zone == filter_bus.get("zone", 0):
 
                         if id not in self.found_elements["buses"]:
@@ -93,7 +102,12 @@ class ElementsLists:
     def get_transformers(self, subsys):
         '''Retrive and filter adjustable transformers from given model in given subsystem. Can filter transformers
         based on input file or exclude transformers if basekv on both sides are not in 110, 220, 400 or are the same.'''
+        
+        # Get all transformers from model from specified subsystem
         transformers = self.psat.get_element_list('adjustable_transformer',subsys)
+        
+        # Use input list for transformers, if corresponding setting is set in configuration file 
+        # and input file for transformers is not empty
         filter_list = (
             self.input_dict.get("transformers", [])
             if self.use_input_file and self.input_settings[1]
@@ -128,6 +142,8 @@ class ElementsLists:
             from_bus = self.psat.get_bus_data(transformer.frbus)
             to_bus = self.psat.get_bus_data(transformer.tobus)
             kv_mismatch = (from_bus.basekv != to_bus.basekv)
+
+            # True if both of buses are in 110, 220, 400 and not equall to each other
             connects_key_kv = bool({from_bus.basekv, to_bus.basekv} & target_kv)
 
             if kv_mismatch and connects_key_kv:
@@ -149,7 +165,12 @@ class ElementsLists:
     def get_shunts(self, abs_minimum, subsys):
         '''Retrive and filter shunts from given model in given subsystem. Can filter shunts
         based on input file or exclude shunts if the absolute value of nominal mvar is less than specified.'''
+
+        # Get all shunts from model from specified subsystem
         shunts = self.psat.get_element_list("fixed_shunt", subsys)
+
+        # Use input list for shunts, if corresponding setting is set in configuration file 
+        # and input file for shunts is not empty
         filter_list = (
             self.input_dict.get("shunts", [])
             if self.use_input_file and self.input_settings[3]
@@ -187,7 +208,12 @@ class ElementsLists:
     def get_generators(self, mw_min, subsys):
         '''Retrive and filter generators from given model in given subsystem. Can filter generators
         based on input file or exclude generators if the max possible generated MW is less than specified.'''
+
+        # Get all generators from model from specified subsystem
         generators = self.psat.get_element_list("generator", subsys)
+
+        # Use input list for generators, if corresponding setting is set in configuration file 
+        # and input file for generators is not empty
         filter_list = (
             self.input_dict.get("generators", [])
             if self.use_input_file and self.input_settings[2]
@@ -200,6 +226,8 @@ class ElementsLists:
             eq_name = generator.eqname
             rating_ok = (generator.mwmax >= mw_min)
             in_service = (generator.status != 0)
+
+            # Get generator's bus
             generator_bus = self.psat.get_bus_data(generator.bus)
 
             if filter_list and eq_name not in self.model_elements["generators"]:
@@ -212,6 +240,8 @@ class ElementsLists:
                         
                         for filter_gen in filter_list:
                             if eq_name in filter_gen["name"] and eq_name not in self.found_elements["generators"]:
+
+                                # If generator is turned on and it's bus type is generator bus ( 2 ) and swing bus ( 3 )
                                 if in_service and generator_bus.type in (2, 3):
                                     filtered_elements.append(generator)
 
@@ -220,6 +250,7 @@ class ElementsLists:
                         if in_service:
                             all_elements.append(generator)
 
+                    # If generator rating is good, is turned on and it's bus type is generator bus ( 2 ) and swing bus ( 3 )
                     elif rating_ok and in_service and generator_bus.type in (2, 3):
                         filtered_elements.append(generator)
 
@@ -232,6 +263,8 @@ class ElementsLists:
       
     def get_generators_with_buses(self):
         '''Retrieve generators with their connected buses.'''
+
+        # True if generators and buses are filtered from input file
         use_input = self.use_input_file and self.input_settings[2]
 
         # Pick the correct source of generators
@@ -241,6 +274,7 @@ class ElementsLists:
             else self.filtered_generators
         )
 
+        # Set of buses' numbers from generators
         buses_of_filtered_generators = {
             generator.bus
             for generator in self.filtered_generators
@@ -259,6 +293,8 @@ class ElementsLists:
 
     def get_transformers_with_buses(self):
         '''Retrieve transformers with their connected buses, sorted by transformer's name.'''
+
+        # True if transformers and buses are filtered from input file
         use_input = self.use_input_file and self.input_settings[1]  
 
         # Pick the correct source of transformers
@@ -268,7 +304,7 @@ class ElementsLists:
             else self.filtered_transformers
         )
 
-        # Create a set of tuples with sorted bus numbers for each transformer
+        # Create a set of tuples with sorted bus numbers combo for each transformer
         buses_of_filtered_transformers = set(
             tuple(sorted((t.frbus, t.tobus)))
             for t in self.filtered_transformers
@@ -276,6 +312,8 @@ class ElementsLists:
 
         buses_with_transformers = defaultdict(list)
         for transformer in transformer_list:
+
+            # Sort transformers' buses and create key based on them 
             buses_key_tuple = tuple(sorted((transformer.frbus, transformer.tobus)))
             buses_key = f"{buses_key_tuple[0]}-{buses_key_tuple[1]}"
 
@@ -333,6 +371,8 @@ class ElementsLists:
     
     
     def get_input_elements_dict(self):
+        ''' Get simplified input element dictionary from input file '''
+
         input_generators = []
         input_buses = []
         input_shunts = []

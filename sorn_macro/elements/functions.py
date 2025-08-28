@@ -10,6 +10,10 @@ class ElementsFunctions:
         
         
     def set_new_generators_bus_kv_value( self, generator_bus_number, generators_id, tmp_model_path, node_kv_change_value=1 ):
+        ''' Try to set generators' bus new kv value by set kv change value up or down. When not able to achive such change, 
+        change it said direction which allows for bigger change. '''
+
+        # Get bus object from generator's bus number 
         generator_bus = self.psat.get_bus_data( generator_bus_number )
 
         # Getting new kv change from base value and calculated bus kv
@@ -25,11 +29,11 @@ class ElementsFunctions:
         # Check if generators bus reached changed_kv_mag, if not try to change in opposite direction
         if round(generator_bus.vmag, 4) < round(changed_kv_vmag, 4):
 
-            # Get old kv_difference
+            # Get old kv_difference and reload model
             kv_difference = ( generator_bus.basekv * generator_bus.vmag ) - bus_kv
             self.psat.load_model(tmp_model_path)
 
-            # Get generator bus with new calculated values
+            # Update generator bus with base values
             generator_bus = self.psat.get_bus_data( generator_bus_number )
 
             # Getting new kv change from base value and calculated bus kv
@@ -44,9 +48,11 @@ class ElementsFunctions:
          
             # Use kv change, that have higger difference value  
             if abs(  ( generator_bus.basekv * generator_bus.vmag ) - bus_kv ) <= abs( kv_difference ):
+
+                # Reload model
                 self.psat.load_model(tmp_model_path)
 
-                # Get generator bus with new calculated values
+                # Update generator bus with base values
                 generator_bus = self.psat.get_bus_data( generator_bus_number )
 
                 # Getting new kv change from base value and calculated bus kv
@@ -67,6 +73,8 @@ class ElementsFunctions:
 
 
     def set_transformer_new_tap( self, transformers, transformer_ratio_margin=0.05 ):
+        ''' Set all transformers with same buses taps based on theirs' direction to connected buses'''
+
         transformers_names = []
         first_transformer_tap_difference = 0
 
@@ -77,7 +85,6 @@ class ElementsFunctions:
             transformer_name = transformer.name
             beg_bus = self.psat.get_bus_data(transformer.frbus)
             end_bus = self.psat.get_bus_data(transformer.tobus)
-
 
             trf_current_tap, trf_current, trf_max, trf_step = self.get_transformer_ratios(
                 transformer, beg_bus.basekv, end_bus.basekv, transformer_ratio_margin
@@ -101,10 +108,11 @@ class ElementsFunctions:
             self.psat.set_transformer_data(transformer)
             self.psat.calculate_powerflow()
 
+            # Update transformer after changes
             updated_transformer = self.psat.get_transformer_data( 
                 transformer.frbus, transformer.tobus, transformer.id, transformer.sec 
             )
-            #Get updated current tap 
+            #Get updated current tap    
             trf_updated_current_tap = self.get_transformer_ratios(
                 updated_transformer, beg_bus.basekv, end_bus.basekv, transformer_ratio_margin
             )[0]
@@ -119,6 +127,8 @@ class ElementsFunctions:
 
     
     def get_transformer_ratios( self, transformer, beg_bus_base_kv, end_bus_base_kv, transformer_ratio_margin, get_data_for_elements_file=False ):
+        ''' Get transformer's current tap, max tap, last tap ratio and step ratio between taps. '''
+        
         trf_from_side = transformer.fsratio * beg_bus_base_kv
         trf_to_side = transformer.tsratio * end_bus_base_kv
 
@@ -147,24 +157,30 @@ class ElementsFunctions:
         
         return trf_current_tap, trf_current, trf_max, trf_step
 
-    # Find generators by their id number and bus number, set their kv bus limit if mvar min and max are not the same and apply changes
+
     def set_generators_kv_limits(self, bus_number, generators_id, changed_kv_vmag):
+        ''' Find generators by their id number and bus number, set their kv bus limit if mvar min and max are not 
+        the same and apply changes'''
+
         for generator_id in generators_id:
             generator = self.psat.get_generator_data(bus_number, generator_id)
             
             generator.vhi = generator.vlo = changed_kv_vmag
             self.psat.set_generator_data(generator)    
 
-    # Get changed kv value by specified value and it's multiplier from base value 
     def get_bus_changed_kv_vmag(self, bus, value):
+        ''' Get changed kv value by specified value and it's multiplier from base value '''
+        
         bus_kv = bus.basekv * bus.vmag
         bus_new_kv = bus_kv + value
         changed_kv_vmag = bus_new_kv / bus.basekv
         
         return changed_kv_vmag, bus_kv
     
-    # Get bus type name depending on it's type number
+    
     def get_bus_type(self, bus):
+        ''' Get bus type name depending on it's type number '''
+        
         types = ["Load","Generator","Swing","Out of service"]
 
         if bus.type > 0 and bus.type < 5:
@@ -174,14 +190,18 @@ class ElementsFunctions:
 
         return name
 
-    # Get formated bus name from bus id
+
     def get_bus_name_from_id(self, id):
+        ''' Get formated bus name from bus id '''
+        
         bus = self.psat.get_bus_data(id)
         return bus.name[:-4].strip()
 
-    # For each updated generator bus get differrence from base mvar and append it to q_row list. 
-    # If first pass, then add bus name to q_header list 
+
     def get_generators_mvar_differrence_results(self, changed_generators, base_generators_mvar, first_pass):
+        '''For each updated generator bus get differrence from base mvar and append it to q_row list. 
+        If first pass, then add bus name to q_header list '''
+        
         q_header = []
         q_row = []
 
@@ -195,9 +215,11 @@ class ElementsFunctions:
 
         return q_row, q_header
         
-    # For each updated buses get differrence from base kv and append it to v_row list.
-    # If first pass, then add nodes name to v_row list 
+
     def get_changed_buses_results(self, changed_buses, base_buses_kv, first_pass):
+        ''' For each updated buses get differrence from base kv and append it to v_row list. 
+        If first pass, then add nodes name to v_row list '''
+
         v_header = []
         v_row = []
 

@@ -8,7 +8,7 @@ from core.psat_functions import PsatFunctions
 csv.register_dialect('excel-semicolon','excel', delimiter=';')
 
 class CsvFile:
-    """Handles writing semicolon-delimited CSV exports for PSAT data."""
+    '''Handles writing semicolon-delimited CSV exports for PSAT data.'''
     
     def __init__(self, path: str | Path, timestamp: str='', prefix: str=''):
         self.functions = ElementsFunctions()
@@ -22,9 +22,10 @@ class CsvFile:
         if self.name_addons:
             self.name_addons += '_'
        
-    # Write header and rows to file using dialect and name set in init 
+
     def write_to_file(self, name: str, header: list[str], rows: list[list[str | float]]) :
-        """Write header and rows into path / "{name_addons}{name}.csv"."""
+        ''' Write header and rows to file using dialect and name set in init. '''
+
         file_path = self.path / f"{self.name_addons}{name}.csv"
 
         with file_path.open('w', newline='') as fp:
@@ -32,7 +33,10 @@ class CsvFile:
             writer.writerow(header)
             writer.writerows(rows)
 
+
     def write_buses_file(self, buses: list):
+        ''' Writes buses' name, type and kv into file. '''
+
         header = ["Name", "Type", "KV"]
         rows: list[list[str]] = []
 
@@ -45,6 +49,8 @@ class CsvFile:
         self.write_to_file("buses", header, rows)
 
     def write_gens_file(self, generators: list):
+        ''' Writes generators' name, bus number, MW min, MW max, current MW, mvar min, mvar max and current mvar into file. '''
+        
         header = ["Bus", "Name", "MW min", "Current MW", "MW max", "Mvar min", "Current Mvar", "Mvar max"]
         rows: list[list[str]] = []
 
@@ -64,6 +70,8 @@ class CsvFile:
 
 
     def write_shunts_file(self, shunts: list):
+        ''' Writes shunts' name, bus number, status, nominal mw, current mw, nominal mvar and current mvar into file. '''
+
         header = ["Bus", "Name", "Status", "Nominal MW", "MW", "Nominal Mvar", "Mvar"]
         rows: list[list[str]] = []
 
@@ -82,6 +90,8 @@ class CsvFile:
 
     
     def write_trfs_file(self, transformers: list, margin):
+        ''' Writes transformers' from bus name, to bus name, transformer name, current tap, max tap into file. '''
+
         header = ["From Bus", "To Bus", "Name", "Current tap", "Max tap"]
         rows: list[list[str | float]] = []
 
